@@ -1,0 +1,24 @@
+joints joint0 -0.00011584 -0.36614100 0.02291780
+joints joint1 0.00055756 0.27581800 -0.21663600
+joints joint2 0.00037151 0.17593100 0.23363900
+joints joint3 0.00000106 -0.27443300 0.06123140
+joints joint4 -0.00022979 -0.08992010 -0.06960020
+joints joint5 -0.00010206 -0.09208240 -0.11675600
+joints joint6 0.00005175 0.24697900 -0.01746580
+joints joint7 0.00008524 0.25078700 0.05370130
+joints joint8 -0.00013462 -0.36888300 -0.02896300
+joints joint9 0.00167680 -0.27024100 0.14810700
+joints joint10 0.00009628 0.26527700 -0.05904990
+joints joint11 0.00030814 -0.46468100 0.05062860
+root joint0
+hier joint0 joint11
+hier joint0 joint8
+hier joint0 joint3
+hier joint3 joint9
+hier joint3 joint4
+hier joint4 joint5
+hier joint4 joint6
+hier joint6 joint10
+hier joint6 joint7
+hier joint10 joint1
+hier joint7 joint2

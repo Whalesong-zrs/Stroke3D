@@ -1,0 +1,88 @@
+joints joint0 -0.37201400 -0.23012800 0.29821900
+joints joint1 0.20372400 -0.17842100 -0.02047750
+joints joint2 -0.22839200 -0.21496300 0.24010300
+joints joint3 0.10473500 -0.13320200 0.05132740
+joints joint4 -0.19070300 -0.22353600 0.41718600
+joints joint5 -0.38375500 -0.22075200 -0.14661700
+joints joint6 0.09857950 -0.22919500 0.47958400
+joints joint7 -0.00814774 -0.19857500 0.23375500
+joints joint8 0.43199300 -0.23381200 -0.41399100
+joints joint9 0.47244800 -0.22424600 -0.31579000
+joints joint10 0.15998400 -0.21921600 -0.35837500
+joints joint11 -0.07028790 -0.22031300 -0.42254900
+joints joint12 0.16742000 -0.19664500 -0.21932900
+joints joint13 0.42758500 -0.23152000 0.39093200
+joints joint14 0.29800300 -0.19500400 -0.06457710
+joints joint15 0.13338100 -0.18235500 0.15243000
+joints joint16 -0.45913900 -0.22921300 -0.12694600
+joints joint17 0.46180100 -0.22358100 -0.24774400
+joints joint18 0.17267000 -0.20444700 0.29876000
+joints joint19 -0.30533800 -0.21658400 -0.14517100
+joints joint20 0.02690280 -0.18471700 -0.09788370
+joints joint21 0.30927900 -0.19549900 0.12487400
+joints joint22 0.09630770 -0.12530000 0.02219230
+joints joint23 0.08361080 -0.04881730 0.03089870
+joints joint24 0.14520400 -0.18827000 -0.12327100
+joints joint25 0.08261870 -0.11650900 0.02638190
+joints joint26 -0.04005250 -0.18029600 0.07139330
+joints joint27 0.12039300 -0.17329200 -0.07137470
+joints joint28 -0.12945800 -0.21797000 0.33884700
+joints joint29 0.37417000 -0.20365000 0.17443900
+joints joint30 0.03560460 -0.18259600 0.15232600
+joints joint31 -0.11895300 -0.19982700 0.11609700
+joints joint32 0.08394270 0.02871630 0.00247369
+joints joint33 0.09447110 -0.13562900 0.06549040
+joints joint34 0.21219800 -0.17984300 0.08002880
+joints joint35 -0.07154480 -0.18970500 -0.03399750
+joints joint36 0.03658570 -0.14194400 -0.00319619
+joints joint37 0.04789800 -0.13213300 0.01514030
+joints joint38 0.15675400 -0.22065700 0.40101600
+joints joint39 -0.06630810 -0.22920200 -0.48287300
+joints joint40 0.18573200 -0.23181200 -0.48003000
+joints joint41 0.42527600 -0.22418500 -0.18521400
+joints joint42 0.42739100 -0.21857400 0.27310800
+joints joint43 -0.02619870 -0.20708700 -0.33508000
+root joint0
+hier joint0 joint2
+hier joint2 joint31
+hier joint31 joint26
+hier joint26 joint37
+hier joint37 joint36
+hier joint37 joint25
+hier joint36 joint35
+hier joint36 joint20
+hier joint25 joint23
+hier joint25 joint22
+hier joint35 joint19
+hier joint20 joint43
+hier joint23 joint32
+hier joint22 joint27
+hier joint22 joint1
+hier joint22 joint3
+hier joint19 joint5
+hier joint43 joint11
+hier joint27 joint24
+hier joint1 joint14
+hier joint3 joint34
+hier joint3 joint33
+hier joint5 joint16
+hier joint11 joint39
+hier joint24 joint12
+hier joint14 joint41
+hier joint34 joint21
+hier joint33 joint30
+hier joint33 joint15
+hier joint12 joint10
+hier joint41 joint17
+hier joint21 joint29
+hier joint30 joint7
+hier joint15 joint18
+hier joint10 joint40
+hier joint17 joint9
+hier joint29 joint42
+hier joint7 joint28
+hier joint18 joint38
+hier joint9 joint8
+hier joint42 joint13
+hier joint28 joint4
+hier joint38 joint6

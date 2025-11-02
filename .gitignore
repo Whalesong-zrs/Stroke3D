@@ -1,0 +1,6 @@
+ckpt/
+eval/
+output/
+tiny-cuda-nn/
+nvdiffrast/
+dinov2

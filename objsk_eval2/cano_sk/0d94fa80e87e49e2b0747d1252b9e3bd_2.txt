@@ -1,0 +1,60 @@
+joints joint0 0.00373626 0.0172402 -0.0110873
+joints joint1 -0.0128026 -0.0109561 -0.00864297
+joints joint2 0.00722793 -0.0395639 -0.00800487
+joints joint3 -0.000150493 -0.316346 -0.00720779
+joints joint4 0.0953025 -0.040236 -0.00522372
+joints joint5 0.168728 -0.0154074 -0.00176599
+joints joint6 0.250397 0.0365202 0.00285132
+joints joint7 0.292664 0.0906188 0.00167515
+joints joint8 -0.128965 -0.00187142 -0.0059984
+joints joint9 -0.223874 0.0527705 0.000683309
+joints joint10 -0.278861 0.109421 -0.00124257
+joints joint11 0.00827152 0.0326384 -0.0256072
+joints joint12 0.0156194 0.0580683 -0.0154322
+joints joint13 0.0182546 0.06566 -0.00894899
+joints joint14 -0.00260459 0.0680688 -0.0106354
+joints joint15 -0.0131367 0.111066 -0.00766488
+joints joint16 0.0275996 0.226679 -0.0060404
+joints joint17 0.041228475 0.30525674999999997 0.00827106375
+joints joint18 -0.0279655 0.456882 0.0762674
+joints joint19 -0.107274 0.139069 0.00200629
+joints joint20 -0.162521 0.26248 0.0565972
+joints joint21 -0.242654 0.356723 0.0730049
+joints joint22 0.139519 0.117521 -0.0144785
+joints joint23 0.222952 0.21929 -0.106807
+joints joint24 0.0226838 0.0637926 -0.171944
+joints joint25 0.0245618 0.100011 -0.216057
+joints joint26 0.0249286 0.14911 -0.241124
+joints joint27 0.0223678 0.0658086 0.170593
+joints joint28 0.022082 0.0916501 0.206576
+joints joint29 0.0227737 0.138953 0.233132
+root joint0
+hier joint0 joint1
+hier joint1 joint2
+hier joint2 joint3
+hier joint2 joint4
+hier joint4 joint5
+hier joint5 joint6
+hier joint6 joint7
+hier joint1 joint8
+hier joint8 joint9
+hier joint9 joint10
+hier joint0 joint11
+hier joint11 joint12
+hier joint12 joint13
+hier joint12 joint14
+hier joint14 joint15
+hier joint15 joint16
+hier joint16 joint17
+hier joint17 joint18
+hier joint15 joint19
+hier joint19 joint20
+hier joint20 joint21
+hier joint12 joint22
+hier joint22 joint23
+hier joint11 joint24
+hier joint24 joint25
+hier joint25 joint26
+hier joint0 joint27
+hier joint27 joint28
+hier joint28 joint29
