@@ -1,0 +1,53 @@
+model:
+  controlnet:
+      use_controlnet: True
+      conditioning_channels: 2
+      controlnet_conditioning_scale: 1.0
+      ckpt_path: logs/train_controlnet_20250520_223440/checkpoints/controlnet_90000.pt
+
+  diffusion:
+    latent_dim: 32
+    hidden_dim: 512
+    depth: 4
+    head: 4
+    num_steps: 1000
+    objective: "pred_noise"
+    norm_type: layer
+    dropout: 0.1
+    scaling_factor: 1
+    cfg_scale: 7.0
+    # ckpt_path: /home/zrs/new_backup/diffusion_ckpt/train_diff_20250504_192141/checkpoints/40000.pt
+    ckpt_path: logs/train_diff_20250521_145203/checkpoints/60000.pt
+
+  vae:
+    coord_dim: 3
+    hidden_dim: 64
+    latent_dim: 32
+    norm_type: layer
+    ckpt_path: logs/train_vae_20250515_201244/checkpoints/500000.pt
+
+  clip:
+    clip_embed_dim: 768
+    ckpt_path: /mnt/cluster/ssd2/zrs/huggingface/hub/models--openai--clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41
+
+  
+val:
+  data_mode: val
+  use_random: true
+  use_text: true
+  seed: 2025
+  batch_size: 5000
+  num_workers: 32
+
+dataset:
+  name: node
+  # train_root: /home/zrs/skdream_data/data/joint_txt_caption
+  # val_root: /home/zrs/skdream_data/data/joint_txt_caption
+  # train_file: /home/zrs/skdream_data/data/train_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/train_subset.txt
+  # val_file: /home/zrs/skdream_data/data/val_jsk.txt
+  train_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  val_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  train_file: /mnt/cluster/ssd6/zrs/skdream_data/train_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/val_10_80.txt
+  val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_jsk.txt

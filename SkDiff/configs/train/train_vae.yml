@@ -1,0 +1,36 @@
+model:
+  name: vae
+  coord_dim: 3
+  hidden_dim: 64
+  latent_dim: 32
+  norm_type: layer
+
+train:
+  seed: 2023
+  batch_size: 64
+  num_workers: 32
+  pin_memory: True
+  max_iters: 500000
+  val_freq: 10000
+  max_grad_norm: 50.0
+  use_amp: True
+  optimizer:
+    type: adamw
+    lr: 1.e-4
+    weight_decay: 1.e-8
+    beta1: 0.99
+    beta2: 0.999
+  scheduler:
+    type: plateau
+    factor: 0.8
+    patience: 1000
+    min_lr: 1.e-5
+  kl_beta: 1.e-8
+
+dataset:
+  name: node
+  use_rotate: true
+  train_root: /home/zrs/skdream_data/data/joint_txt
+  val_root: /home/zrs/skdream_data/data/joint_txt
+  train_file: /home/zrs/skdream_data/data/train.txt
+  val_file: /home/zrs/skdream_data/data/val.txt

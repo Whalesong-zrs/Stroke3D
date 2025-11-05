@@ -1,0 +1,14 @@
+--extra-index-url https://download.pytorch.org/whl/cu126
+torch
+tensorboard
+torch-ema
+torch_geometric
+transformers
+tqdm
+matplotlib
+seaborn
+pandas
+scikit-learn
+einops
+easydict
+timm

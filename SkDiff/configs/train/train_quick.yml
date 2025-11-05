@@ -1,0 +1,84 @@
+model:
+  diffusion:
+    latent_dim: 32
+    hidden_dim: 32
+    depth: 2
+    heads: 4
+    num_steps: 1000
+    objective: "pred_noise"
+    norm_type: layer
+    dropout: 0.1
+    uncond_prob: 0.1
+    # uncond_prob: 0
+    cfg_scale: 7.0
+    min_snr_loss_weight: False
+    min_snr_gamma: 1
+
+  vae:
+    coord_dim: 3
+    hidden_dim: 64
+    latent_dim: 32
+    norm_type: layer
+    ckpt_path: /root/autodl-fs-data3/model/vae_1e-8_500k_32.pt
+
+  clip:
+    clip_embed_dim: 768
+    ckpt_path: /root/autodl-fs-data3/model/clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41
+
+train:
+  seed: 2025
+  batch_size: 128
+  # batch_size: 1
+  num_workers: 4
+  pin_memory: True
+  max_iters: 100
+  val_freq: 10
+  # max_iters: 1
+  # val_freq: 1
+  max_grad_norm: 1.0
+  use_amp: false
+  optimizer:
+    type: adamw
+    lr: 1.e-4
+    weight_decay: 1.e-4
+    beta1: 0.9
+    beta2: 0.999
+  # scheduler:
+  #   type: MultiStepLR
+  #   # milestones: [3000, 6000, 10000]
+  #   # milestones: [400, 700]
+  #   milestones: [100000]
+  #   gamma: 0.1
+  #   total_iters: 10000
+  #   warmup_iter: -1  # no warm up
+
+  scheduler:
+    type: warmup_cosineannealing
+    warmup_iter: 2000 
+    T_max: 400000             # <--- 新增核心参数，通常等于您的 total_iters
+    eta_min: 0
+  
+
+  ema_decay: 0.9999
+
+log_dir: /root/autodl-fs-data3/gnndiff/logs
+
+
+# dataset:
+#   name: node
+#   use_rotate: true
+#   clip_emb_root: /mnt/cluster/ssd6/zrs/skdream_data/Articulation-XL2.0/clipemb_10_30
+#   train_root: /mnt/cluster/ssd6/zrs/skdream_data/Articulation-XL2.0/train_10_30_caption
+#   train_file: /mnt/cluster/ssd6/zrs/skdream_data/train_magic1_char_reduced.txt
+
+#   val_root: /mnt/cluster/ssd6/zrs/skdream_data/
+#   val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_10_30_magic.txt
+#   # train_file: /mnt/cluster/ssd6/zrs/skdream_data/train_mix_0_30.txt
+#   # val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_mix_0_30.txt
+
+dataset:
+  name: node
+  use_rotate: true
+  clip_emb_root: /root/autodl-fs-data3/Articulation-XL2.0/clip_emb_caption
+  train_file: /root/autodl-fs-data3/Articulation-XL2.0/train_meta.json
+  val_file: /root/autodl-fs-data3/Articulation-XL2.0/val_meta.json

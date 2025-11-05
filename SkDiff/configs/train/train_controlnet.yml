@@ -1,0 +1,76 @@
+model:
+  controlnet:
+    use_controlnet: True
+    conditioning_channels: 2
+    controlnet_conditioning_scale: 1.0
+    # condition_dropout_prob: 0.1
+
+  diffusion:
+    latent_dim: 32
+    hidden_dim: 512
+    depth: 4
+    head: 4
+    num_steps: 1000
+    objective: "pred_noise"
+    norm_type: layer
+    dropout: 0.1
+    scaling_factor: 1
+    uncond_prob: 0.1
+    cfg_scale: 7.0
+    # ckpt_path: /home/zrs/new_backup/diffusion_ckpt/train_diff_20250504_192141/checkpoints/40000.pt
+    # ckpt_path: /home/zrs/SketchDream/logs/train_diff_20250507_212426/checkpoints/40000.pt
+    ckpt_path: logs/train_diff_20250521_202543/checkpoints/20000.pt #cr
+
+  vae:
+    coord_dim: 3
+    hidden_dim: 64
+    latent_dim: 32
+    norm_type: layer
+    # ckpt_path: /home/zrs/new_backup/vae_ckpt/train_vae_20250425_230059/checkpoints/500000.pt # beta 1e-8
+    ckpt_path: logs/train_vae_20250515_201244/checkpoints/500000.pt
+
+  clip:
+    clip_embed_dim: 768
+    ckpt_path: /mnt/cluster/ssd2/zrs/huggingface/hub/models--openai--clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41
+
+train:
+  seed: 2023
+  batch_size: 128
+  num_workers: 16
+  pin_memory: True
+  max_iters: 100000
+  val_freq: 10000
+  # max_iters: 1
+  # val_freq: 1
+  max_grad_norm: 50.0
+  use_amp: True
+  optimizer:
+    type: adamw
+    lr: 1.e-4
+    weight_decay: 1.e-2
+    beta1: 0.9
+    beta2: 0.999
+  scheduler:
+    type: MultiStepLR
+    milestones: [300000, 600000, 1000000]
+    gamma: 0.5
+    total_iters: 100000
+    warmup_iter: -1  # no warm up
+
+  kl_beta: 0
+  ema_decay: 0.9999
+
+
+dataset:
+  name: node
+  use_rotate: true
+  # train_root: /home/zrs/skdream_data/data/joint_txt_caption
+  # val_root: /home/zrs/skdream_data/data/joint_txt_caption
+  # train_file: /home/zrs/skdream_data/data/train_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/val_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/val_jsk.txt
+  train_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  val_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  train_file: /mnt/cluster/ssd6/zrs/skdream_data/train_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/val_10_80.txt
+  val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_jsk.txt

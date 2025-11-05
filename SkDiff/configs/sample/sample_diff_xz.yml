@@ -1,0 +1,43 @@
+model:
+  diffusion:
+    latent_dim: 32
+    hidden_dim: 768
+    depth: 8
+    heads: 12
+    num_steps: 1000
+    objective: "pred_noise"
+    norm_type: layer
+    dropout: 0
+    cfg_scale: 7.0
+    min_snr_loss_weight: False
+    min_snr_gamma: 1
+    ckpt_path: /root/autodl-fs-data3/gnndiff/logs/train_parallel_20250911_051325/checkpoints/100000.pt
+
+  vae:
+    coord_dim: 3
+    hidden_dim: 64
+    latent_dim: 32
+    norm_type: layer
+    ckpt_path: /root/autodl-fs-data3/model/vae_1e-8_500k_32.pt
+
+  clip:
+    clip_embed_dim: 768
+    ckpt_path: /root/autodl-fs-data3/model/clip-vit-large-patch14/snapshots/32bd64288804d66eefd0ccbe215aa642df71cc41
+
+val:
+  data_mode: val
+  use_random: true
+  use_text: true
+  seed: 2024
+  batch_size: 5000
+  num_workers: 32
+  default_view: xz
+
+dataset:
+  name: node
+  use_rotate: false
+  clip_emb_root: /root/autodl-fs-data3/Articulation-XL2.0/clip_emb_caption
+  val_file: /root/autodl-fs-data3/Articulation-XL2.0/test_common_meta.json
+
+output_dir: /root/autodl-fs-data3/gnndiff/articulation/train_parallel_20250911_100000_view_tag/vis_xz
+skeleton_output_base_dir: /root/autodl-fs-data3/gnndiff/articulation/train_parallel_20250911_100000_view_tag/skeleton_xz

@@ -1,0 +1,29 @@
+model:
+  vae:
+    name: vae
+    coord_dim: 3
+    hidden_dim: 64
+    latent_dim: 32
+    norm_type: layer
+    ckpt_path: /mnt/cluster/ssd6/zrs/500000.pt
+
+val:
+  data_mode: val
+  use_random: true 
+  seed: 2025
+  batch_size: 1
+
+dataset:
+  name: node
+  # train_root: /home/zrs/skdream_data/data/joint_txt
+  # val_root: /home/zrs/skdream_data/data/joint_txt
+  # train_file: /home/zrs/skdream_data/data/train.txt
+  # val_file: /home/zrs/skdream_data/data/val.txt
+  train_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  val_root: /mnt/cluster/ssd6/zrs/skdream_data/joint_txt_caption
+  # train_file: /mnt/cluster/ssd6/zrs/skdream_data/data/train_10_80.txt
+  # val_file: /home/zrs/skdream_data/data/val_10_80.txt
+  train_file: /mnt/cluster/ssd6/zrs/skdream_data/val_jsk_new.txt
+  # val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_jsk.txt
+  val_file: /mnt/cluster/ssd6/zrs/skdream_data/val_jsk_new.txt
+  
