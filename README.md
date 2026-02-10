@@ -1,4 +1,4 @@
-# Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models
+# Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models （ICLR 2026）
 
 **[Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models](https://openreview.net/forum?id=TBD)**
 <br/>
