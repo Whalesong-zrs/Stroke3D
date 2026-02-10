@@ -5,7 +5,7 @@
 Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 <br/>
 
-[![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://whalesong-zrs.github.io/Stroke3D/)[![ICLR](https://img.shields.io/badge/ICLR2026-Paper-blue)](https://openreview.net/forum?id=TBD)
+[![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://whalesong-zrs.github.io/Stroke3D/)[![ICLR](https://img.shields.io/badge/ICLR2026-Paper-blue)]([https://openreview.net/forum?id=TBD](https://openreview.net/forum?id=VgOWxor3LV&noteId=GcoBObqQRa))
 
 > Code is being cleaned up and organized. Stay tuned!
 
