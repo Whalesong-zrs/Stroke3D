@@ -4,7 +4,7 @@
 <br/>
 Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 <br/>
-
+http://arxiv.org/abs/2602.09713
 [![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://whalesong-zrs.github.io/Stroke3D_project_page/)[![ICLR](https://img.shields.io/badge/ICLR2026-Paper-blue)](https://openreview.net/forum?id=VgOWxor3LV&noteId=GcoBObqQRa)
 
 > Code is being cleaned up and organized. Stay tuned!
