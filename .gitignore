@@ -1,8 +1,24 @@
+.DS_Store
+*.py[cod]
+__pycache__/
+.ipynb_checkpoints/
+.venv/
+
+# Local experiment artifacts
 ckpt/
+checkpoints/
+data/
 eval/
+logs/
 output/
-tiny-cuda-nn/
+outputs/
+runs/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+
+# Optional external dependencies
+dinov2/
 nvdiffrast/
-dinov2
-.ipynb_checkpoints
-__pycache__
+tiny-cuda-nn/

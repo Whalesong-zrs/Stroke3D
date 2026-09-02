@@ -1,34 +1,42 @@
-# Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models （ICLR 2026）
+# Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models
 
-**[Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models](https://openreview.net/forum?id=VgOWxor3LV)**
-<br/>
-Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
-<br/>
+Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang  
+**ICLR 2026**
 
-[![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://whalesong-zrs.github.io/Stroke3D_project_page/)
-[![OpenReview](https://img.shields.io/badge/ICLR_2026-OpenReview-blue)](https://openreview.net/forum?id=VgOWxor3LV)
-[![arXiv](https://img.shields.io/badge/arXiv-2602.09713-b31b1b.svg)](https://arxiv.org/abs/2602.09713)
+[[OpenReview](https://openreview.net/forum?id=VgOWxor3LV)]
+[[Project page](https://whalesong-zrs.github.io/Stroke3D_project_page/)]
 
-> Code is being cleaned up and organized. Stay tuned!
+## Code
 
-## Updates
+- [`SkDiff/`](SkDiff/) contains the skeleton latent VAE, diffusion, and
+  ControlNet components.
+- [`SKDream_DPO/`](SKDream_DPO/) contains the cleaned SKDream/SKA-DPO pipeline
+  for preference-pair construction, training, inference, and evaluation.
 
-- [~] Code Release. (Code is being organized)
-- [x] Skeleton Checkpoint Release: [Sk-VAE](https://drive.google.com/file/d/17v0J-oBpKQFxzEmfVINp0gbK-oAKylcO/view?usp=sharing) and [Sk-Diff](https://drive.google.com/file/d/1CVAq1dHnv34oXtPfIYSJYCgP00McMeiB/view?usp=drive_link).
-- [ ] Data Release.
+Please follow the README inside each module for its environment, data layout,
+and commands. Datasets and the SKA-DPO checkpoint are not stored in this Git
+repository; their links will be added after the release metadata and licenses
+have been reviewed.
+
+## Release status
+
+- [x] Code release
+- [x] Skeleton checkpoints: [Sk-VAE](https://drive.google.com/file/d/17v0J-oBpKQFxzEmfVINp0gbK-oAKylcO/view?usp=sharing) and [Sk-Diff](https://drive.google.com/file/d/1CVAq1dHnv34oXtPfIYSJYCgP00McMeiB/view?usp=drive_link)
+- [ ] SKA-DPO checkpoint release
+- [ ] Data release
 
 ## Citation
 
 ```bibtex
 @inproceedings{zhao2026stroke3d,
-  title={Stroke3D: Lifting 2D strokes into rigged 3D model via latent diffusion models},
-  author={Zhao, Ruisi and Zheng, Haoren and Yang, Zongxin and Fan, Hehe and Yang, Yi},
-  booktitle={The Fourteenth International Conference on Learning Representations},
-  year={2026},
-  url={https://openreview.net/forum?id=VgOWxor3LV}
+  title     = {Stroke3D: Lifting 2D Strokes into Rigged 3D Model via Latent Diffusion Models},
+  author    = {Zhao, Ruisi and Zheng, Haoren and Yang, Zongxin and Fan, Hehe and Yang, Yi},
+  booktitle = {The Fourteenth International Conference on Learning Representations},
+  year      = {2026},
+  url       = {https://openreview.net/forum?id=VgOWxor3LV}
 }
 ```
 
 ## Contact
 
-If you have any questions, please email Ruisi Zhao (zhaors00@zju.edu.cn), or open an issue.
+For questions, email Ruisi Zhao at zhaors00@zju.edu.cn or open an issue.

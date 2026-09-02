@@ -1,0 +1,30 @@
+.DS_Store
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local models, generated datasets, and experiment outputs
+ckpt/
+checkpoints/
+data/
+eval/
+logs/
+output/
+outputs/
+runs/
+*.safetensors
+*.ckpt
+*.pth
+*.pt
+*.bin
+*.tar
+*.tar.gz
+*.tar.zst
+
+# Locally checked-out dependencies
+dinov2/
+nvdiffrast/
+tiny-cuda-nn/

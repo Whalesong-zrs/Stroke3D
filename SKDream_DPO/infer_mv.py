@@ -1,174 +1,184 @@
-import torch
-import torchvision.transforms as T
+#!/usr/bin/env python3
+"""Generate skeleton-conditioned multi-view images with SKDream."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import pickle
+from pathlib import Path
+
 import numpy as np
 import skimage.io as io
-import os
-import skeleton.render_one_pose as sr
-import pickle
-from skdream.utils.camera import create_camera_to_world_matrix
-from skdream.pipeline_skdream import load_skdream_pipeline
-from argparse import ArgumentParser
-import json
-from rembg import remove,new_session
+import torch
+import torchvision.transforms.functional as transform_functional
 from PIL import Image
-from glob import glob
-from render import util
+from rembg import new_session, remove
 
-def normalize_to_cube(points,scale_factor=1.0):
-    min_vals = points.min(dim=0).values
-    max_vals = points.max(dim=0).values
+import skeleton.render_one_pose as skeleton_renderer
+from skdream.pipeline_skdream import load_skdream_pipeline
+from skdream.utils.camera import create_camera_to_world_matrix
+from skdream.utils.projection import perspective, rotate_x, rotate_y, translate
 
-    center = (min_vals + max_vals) / 2.0
-    centered_points = points - center
-    
-    bbox_size = max_vals - min_vals
-    max_length = bbox_size.max()
-    scale = 1 / max_length
-    scale = scale * scale_factor
 
-    normalized_points = centered_points * scale
+DEFAULT_NEGATIVE_PROMPT = (
+    "low poly, white model, noise, strange color, ugly, oversaturated, doubled face, "
+    "black and white, sepia, freckles, paintings, sketches, worst quality, low quality, "
+    "low resolution, monochrome, grayscale, error, blurry, artifacts"
+)
 
-    return normalized_points,-center,scale
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--save_dir',type=str)
-    parser.add_argument('--num_views',type=int,default=4)
-    parser.add_argument('--mvc_ckpt',type=str)
-    parser.add_argument('--data_dir',type=str,default='objsk_eval')
-    parser.add_argument('--neg_prompt',type=str,default='')
-    parser.add_argument('--cond_scale',type=float,default=1.0)
-    parser.add_argument('--repeat_num',type=int,default=1)
-    parser.add_argument('--gpu',type=int,default=0)
-    args = parser.parse_args()
-    
-    device = torch.device(f'cuda:{args.gpu}')
-    data_dir = args.data_dir
-    eval_dict = json.load(open(os.path.join(data_dir,'eval.json'),'r'))
-    # for k in eval_dict.copy().keys():
-    #     if os.path.exists(os.path.join(args.save_dir,k)):
-    #         print(f"{os.path.join(args.save_dir,k)} already exists, skip.")
-    #         del eval_dict[k]
-    if len(eval_dict) == 0:
-        print("No new data to process, exiting.")
-        exit(0)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--data-dir", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--controlnet", required=True, help="SKDream checkpoint or Hub ID")
+    parser.add_argument(
+        "--base-model",
+        default="lzq49/mvdream-sd21-diffusers",
+        help="MVDream Diffusers checkpoint or Hub ID",
+    )
+    parser.add_argument("--num-views", type=int, default=4)
+    parser.add_argument("--num-repeats", type=int, default=1)
+    parser.add_argument("--negative-prompt", default=DEFAULT_NEGATIVE_PROMPT)
+    parser.add_argument("--conditioning-scale", type=float, default=1.0)
+    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--limit", type=int)
+    return parser.parse_args()
 
-    sk_list = [os.path.join(data_dir,'cano_sk',k+'.txt') for k in eval_dict.keys()]
-    np.random.seed(0)
-    azim_list = np.random.randint(0,360,len(sk_list))
-    elev_list = np.random.randint(0,30,len(sk_list))
-    
-    # Generate conditions
-    for si,sk_file in enumerate(sk_list):
-        # prepare skeleton
-        obj_name = sk_file.split('/')[-1].split('.')[0]
-        save_dir = os.path.join(args.save_dir,obj_name)
 
-        os.makedirs(save_dir,exist_ok=True)
-        cam_dict = {'mv':[],'mvp':[],'campos':[],'c2w':[],'elevation':[],'azimuth':[],'distance':[]}
-        # prepare camera
-        num_views = args.num_views
-        fovy = np.deg2rad(30)
-        proj_mtx = util.perspective(fovy, 1.0, 0.5, 1000)
-        
-        elevation = elev_list[si]
-        azimuth = azim_list[si]
-        distance = 2.5
-        for i in range(num_views):
-            rotate_x =  np.deg2rad(elevation)
-            rotate_y =  np.deg2rad(azimuth)
-            mv     = util.translate(0, 0, -distance) @ (util.rotate_x(-rotate_x) @ util.rotate_y(-rotate_y))
-            mvp    = proj_mtx @ mv
-            campos = torch.linalg.inv(mv)[:3, 3]
-            c2w = create_camera_to_world_matrix(elevation,azimuth,cam_dist=1)
-            c2w = torch.tensor(c2w,dtype=mv.dtype,device=mv.device)
-            
-            cam_dict['mv'].append(mv)
-            cam_dict['mvp'].append(mvp)
-            cam_dict['campos'].append(campos)
-            cam_dict['elevation'].append(elevation)
-            cam_dict['azimuth'].append(azimuth)
-            cam_dict['distance'].append(distance)
-            cam_dict['c2w'].append(c2w)
-            
-            azimuth = azimuth + 360//num_views
-        cam_dict['mvp'] = torch.stack(cam_dict['mvp'],dim=0)
-        cam_dict['mv'] = torch.stack(cam_dict['mv'],dim=0)
-        cam_dict['campos'] = torch.stack(cam_dict['campos'],dim=0)
-        cam_dict['c2w'] = torch.stack(cam_dict['c2w'],dim=0)
-        
-        with open(os.path.join(save_dir,'cam_dict.pkl'),'wb') as f:
-            pickle.dump(cam_dict,f)
-        # print(obj_name)
-        # prepare skeleton
-        joints,bones_idx,parts = sr.get_skeleton_info(sk_file)
-        joints = torch.tensor(joints)
-        joints_2d,joints_depth = sr.project_joints(joints,cam_dict['mvp'])
-        sk_list = []
-        for iv in range(num_views):
-            sorted_bones_idx = sr.sort_bones_depth(joints_depth[iv],bones_idx)
-            # draw skeleton
-            canvas = np.zeros((512,512,3),dtype=np.uint8)
-            depth_values = sr.process_depth(joints_depth[iv])
-            canvas = sr.draw_ccm_with_depth(canvas,joints,joints_2d[iv],sorted_bones_idx,parts,depth_values)
-            img = Image.fromarray(canvas,mode='RGBA').resize((256,256),resample=Image.Resampling.NEAREST)
-            img.save(os.path.join(save_dir,f'cond_{iv}.png'))
-            
-    # Generate images
-    if args.neg_prompt == 'default':
-        neg_prompt = 'low poly, white model, noise, strange color, ugly, oversaturated, doubled face, b&w, sepia, freckles, paintings, sketches, worst quality, low quality, lowres, monochrome, grayscale, error, blurry, artifacts,'
-    elif args.neg_prompt == '':
-        neg_prompt = None
-    else:
-        neg_prompt = args.neg_prompt
-    mvc_ckpt = args.mvc_ckpt
-    pipe = load_skdream_pipeline(pretrained_controlnet_name_or_path=mvc_ckpt,
-                                    pretrained_model_name_or_path='./ckpt/mvdream-sd21-diffusers-lzq',
-                                        num_views=num_views,weights_dtype=torch.float16,device=device)
-    cond_list = sorted([os.path.join(args.save_dir,k) for k in eval_dict.keys()])
-    cond_channels = pipe.controlnet.conditioning_channels
-    
-    rembg_session = new_session("is_general_use")
-    
-    for folder in cond_list:
-        if len(glob(folder+'/gen*.png')) == num_views*args.repeat_num:
+def camera_bundle(elevation: float, azimuth: float, num_views: int) -> dict:
+    distance = 2.5
+    projection = perspective(np.deg2rad(30), 1.0, 0.5, 1000)
+    result = {
+        "mv": [],
+        "mvp": [],
+        "campos": [],
+        "c2w": [],
+        "elevation": [],
+        "azimuth": [],
+        "distance": [],
+    }
+    for view in range(num_views):
+        view_azimuth = azimuth + view * (360.0 / num_views)
+        model_view = translate(0, 0, -distance) @ (
+            rotate_x(-np.deg2rad(elevation)) @ rotate_y(-np.deg2rad(view_azimuth))
+        )
+        result["mv"].append(model_view)
+        result["mvp"].append(projection @ model_view)
+        result["campos"].append(torch.linalg.inv(model_view)[:3, 3])
+        result["c2w"].append(
+            torch.as_tensor(
+                create_camera_to_world_matrix(elevation, view_azimuth, 1),
+                dtype=torch.float32,
+            )
+        )
+        result["elevation"].append(elevation)
+        result["azimuth"].append(view_azimuth)
+        result["distance"].append(distance)
+    for key in ("mv", "mvp", "campos", "c2w"):
+        result[key] = torch.stack(result[key])
+    return result
+
+
+def render_conditions(skeleton_file: Path, camera: dict, output_dir: Path) -> list[Image.Image]:
+    joints, bones, parts = skeleton_renderer.get_skeleton_info(str(skeleton_file))
+    joints = torch.as_tensor(joints)
+    projected, depth = skeleton_renderer.project_joints(joints, camera["mvp"])
+    conditions = []
+    for view in range(camera["mvp"].shape[0]):
+        sorted_bones = skeleton_renderer.sort_bones_depth(depth[view], bones)
+        canvas = skeleton_renderer.draw_ccm_with_depth(
+            np.zeros((512, 512, 3), dtype=np.uint8),
+            joints,
+            projected[view],
+            sorted_bones,
+            parts,
+            skeleton_renderer.process_depth(depth[view]),
+        )
+        condition = Image.fromarray(canvas, mode="RGBA").resize(
+            (256, 256), Image.Resampling.NEAREST
+        )
+        condition.save(output_dir / f"cond_{view}.png")
+        conditions.append(condition)
+    return conditions
+
+
+def main() -> None:
+    args = parse_args()
+    device = torch.device(args.device)
+    with (args.data_dir / "eval.json").open(encoding="utf-8") as handle:
+        metadata = json.load(handle)
+    item_ids = sorted(metadata)
+    if args.limit is not None:
+        item_ids = item_ids[: args.limit]
+
+    pipeline = load_skdream_pipeline(
+        pretrained_controlnet_name_or_path=args.controlnet,
+        pretrained_model_name_or_path=args.base_model,
+        num_views=args.num_views,
+        weights_dtype=torch.float16,
+        device=device,
+    )
+    rembg_session = new_session("isnet-general-use")
+    rng = np.random.default_rng(args.seed)
+
+    for item_index, item_id in enumerate(item_ids):
+        item_dir = args.output_dir / item_id
+        item_dir.mkdir(parents=True, exist_ok=True)
+        expected = [
+            item_dir / f"gen_{repeat}_{view}.png"
+            for repeat in range(args.num_repeats)
+            for view in range(args.num_views)
+        ]
+        if all(path.is_file() for path in expected):
+            print(f"Skipping complete item: {item_id}")
             continue
-        cam_dict = pickle.load(open(os.path.join(folder,'cam_dict.pkl'),'rb'))
-        c2w = cam_dict['c2w'].reshape(1,num_views,-1).to(device)
 
-        cond_imgs = []
-        for i in range(num_views):
-            cond_imgs.append(Image.open(os.path.join(folder,f'cond_{i}.png')))
-        def rgb2binary(image):
-            gray_array = np.array(image.convert('RGB').convert('L'))
-            threshold = 1  
-            binary_array = np.where(gray_array > threshold, 1, 0).astype(np.uint8)* 255
-            return np.stack([binary_array]*3,axis=-1)
-        if cond_channels == 4:
-            cond_imgs = [np.array(cond.convert('RGBA')) for cond in cond_imgs]
-            conds = cond_imgs
-        if cond_channels == 3:
-            cond_imgs = [np.array(cond.convert('RGB')) for cond in cond_imgs]
-            conds = cond_imgs
-        elif cond_channels == 1:
-            cond_imgs = [rgb2binary(cond) for cond in cond_imgs]
-            conds = [cond[...,:1] for cond in cond_imgs]
-        
-        xm = T.Compose([T.ToTensor()])
-        cond_tensor = [xm(x) for x in conds]
-        cond_tensor = torch.stack(cond_tensor,dim=0).unsqueeze(0).to(device)
-        cond_tensor = cond_tensor * 2 -1
+        item_meta = metadata[item_id]
+        elevation = float(item_meta.get("elevation", rng.integers(0, 30)))
+        azimuth = float(item_meta.get("azimuth", rng.integers(0, 360)))
+        camera = camera_bundle(elevation, azimuth, args.num_views)
+        with (item_dir / "cam_dict.pkl").open("wb") as handle:
+            pickle.dump(camera, handle)
+        conditions = render_conditions(
+            args.data_dir / "cano_sk" / f"{item_id}.txt", camera, item_dir
+        )
+        condition_tensor = torch.stack(
+            [transform_functional.to_tensor(image) for image in conditions]
+        ).unsqueeze(0)
+        condition_tensor = condition_tensor.to(device) * 2 - 1
+        camera_to_world = camera["c2w"].reshape(1, args.num_views, -1).to(device)
 
-        
-        for r in range(args.repeat_num):
-            prompt = eval_dict[folder.split('/')[-1]]['caption']
-            images = pipe(prompt=prompt,negative_prompt=neg_prompt,hint=cond_tensor,c2ws=c2w,
-                          guidance_scale=7.5,controlnet_conditioning_scale=args.cond_scale,
-                          guess_mode=False,blind_control_until_step=None,output_type="numpy").images
-            images = (images*255).astype(np.uint8)
-            
-            for i in range(num_views):
-                io.imsave(os.path.join(folder,f'mix_{r}_{i}.png'),(conds[i][:,:,:3]*0.3+images[i]*0.8).astype(np.uint8))
-                mask = remove(images[i],only_mask=True,session=rembg_session,post_process_mask=True,alpha_matting=False,alpha_matting_foreground_threshold=150)
-                io.imsave(os.path.join(folder,f'gen_{r}_{i}.png'),np.concatenate((images[i],mask[...,None]),axis=-1))
-    
+        for repeat in range(args.num_repeats):
+            generator = torch.Generator(device=device).manual_seed(
+                args.seed + item_index * args.num_repeats + repeat
+            )
+            images = pipeline(
+                prompt=item_meta["caption"],
+                negative_prompt=args.negative_prompt or None,
+                hint=condition_tensor,
+                c2ws=camera_to_world,
+                guidance_scale=7.5,
+                controlnet_conditioning_scale=args.conditioning_scale,
+                guess_mode=False,
+                blind_control_until_step=None,
+                output_type="numpy",
+                generator=generator,
+            ).images
+            images = np.clip(images * 255, 0, 255).astype(np.uint8)
+            for view, image in enumerate(images):
+                mask = remove(image, only_mask=True, session=rembg_session)
+                mask = np.asarray(mask)
+                if mask.ndim == 3:
+                    mask = mask[..., 0]
+                rgba = np.concatenate([image, mask[..., None]], axis=-1)
+                io.imsave(
+                    item_dir / f"gen_{repeat}_{view}.png", rgba, check_contrast=False
+                )
+        print(f"Generated: {item_id}")
+
+
+if __name__ == "__main__":
+    main()
