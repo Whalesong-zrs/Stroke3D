@@ -17,7 +17,7 @@ Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 The maintained open-source path is `SKDream_DPO`; follow its README for the
 environment, data layout, and commands. Datasets and checkpoints are not stored
 in this Git repository. They will be collected in the single Hugging Face model
-repository [`zhaors00/stroke3d`](https://huggingface.co/zhaors00/stroke3d), with
+repository [`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D), with
 separate subfolders for each component.
 
 ## Release status

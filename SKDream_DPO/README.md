@@ -51,7 +51,7 @@ an SFT SKDream controlnet, the
 [`dinov2_vitl14_reg`](https://github.com/facebookresearch/dinov2) checkpoint, and the
 SKA scorer checkpoint. The Stroke3D data and final SKA-DPO weights are organized under
 separate subfolders in the single Hugging Face repository
-[`zhaors00/stroke3d`](https://huggingface.co/zhaors00/stroke3d). Review the component
+[`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D). Review the component
 cards and upstream licenses before use.
 
 ## 1. Build preference pairs
@@ -102,7 +102,7 @@ diffusion-DPO inverse temperature and defaults to the experimental value `5000`.
 python infer_mv.py \
   --data-dir /path/to/eval_inputs \
   --output-dir eval/ska_dpo \
-  --controlnet zhaors00/stroke3d \
+  --controlnet zhaors00/Stroke3D \
   --controlnet-subfolder skdream-ska-dpo
 
 export EVAL_JSON=/path/to/eval_inputs/eval.json

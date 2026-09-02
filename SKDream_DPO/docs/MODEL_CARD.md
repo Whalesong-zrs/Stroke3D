@@ -17,7 +17,7 @@ batch size 4, gradient accumulation 2, and diffusion-DPO inverse temperature 500
 
 The checkpoint is not a standalone text-to-image pipeline. Load it together with the
 MVDream Diffusers base model through `load_skdream_pipeline` or pass it to `infer_mv.py`.
-For the shared Stroke3D Hub repository, use repository ID `zhaors00/stroke3d` and
+For the shared Stroke3D Hub repository, use repository ID `zhaors00/Stroke3D` and
 subfolder `skdream-ska-dpo`.
 
 ## Limitations
