@@ -14,7 +14,7 @@ Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 ## Updates
 
 - [~] Code Release. (Code is being organized)
-- [ ] Checkpoint Release.
+- [x] Skeleton Checkpoint Release: [Sk-VAE](https://drive.google.com/file/d/17v0J-oBpKQFxzEmfVINp0gbK-oAKylcO/view?usp=sharing) and [Sk-Diff](https://drive.google.com/file/d/1CVAq1dHnv34oXtPfIYSJYCgP00McMeiB/view?usp=drive_link).
 - [ ] Data Release.
 
 ## Citation
