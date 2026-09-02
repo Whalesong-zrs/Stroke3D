@@ -137,8 +137,18 @@ class SKDreamPipeline(DiffusionPipeline):
 
         device = torch.device(f"cuda:{gpu_id}")
 
-        for cpu_offloaded_model in [self.unet, self.condition_encoder, self.vae, self.controlnet]:
-            cpu_offload(cpu_offloaded_model, device)
+        # Keep this list aligned with the modules registered in __init__.  The
+        # historical implementation referred to ``condition_encoder``, which
+        # does not exist in SKDream and made this method fail immediately.
+        for cpu_offloaded_model in [
+            self.text_encoder,
+            self.camera_proj,
+            self.controlnet,
+            self.unet,
+            self.vae,
+        ]:
+            if cpu_offloaded_model is not None:
+                cpu_offload(cpu_offloaded_model, device)
 
         if self.safety_checker is not None:
             cpu_offload(self.safety_checker, execution_device=device, offload_buffers=True)
@@ -158,15 +168,17 @@ class SKDreamPipeline(DiffusionPipeline):
         device = torch.device(f"cuda:{gpu_id}")
 
         hook = None
-        for cpu_offloaded_model in [self.condition_encoder, self.unet, self.vae]:
-            _, hook = cpu_offload_with_hook(cpu_offloaded_model, device, prev_module_hook=hook)
+        for cpu_offloaded_model in [self.text_encoder, self.camera_proj, self.unet, self.vae]:
+            if cpu_offloaded_model is not None:
+                _, hook = cpu_offload_with_hook(cpu_offloaded_model, device, prev_module_hook=hook)
 
         if self.safety_checker is not None:
             # the safety checker can offload the vae again
             _, hook = cpu_offload_with_hook(self.safety_checker, device, prev_module_hook=hook)
 
         # control net hook has be manually offloaded as it alternates with unet
-        cpu_offload_with_hook(self.controlnet, device)
+        if self.controlnet is not None:
+            cpu_offload_with_hook(self.controlnet, device)
 
         # We'll offload the last model manually.
         self.final_offload_hook = hook
@@ -721,7 +733,7 @@ class SKDreamPipeline(DiffusionPipeline):
 
         # 4. Prepare image
         # if hint is not None and self.controlnet is not None:
-        hint = self.prepare_hint(
+        prepared_hint = self.prepare_hint(
             image=hint,
             width=width,
             height=height,
@@ -731,9 +743,18 @@ class SKDreamPipeline(DiffusionPipeline):
             dtype=self.controlnet.dtype,
             do_classifier_free_guidance=do_classifier_free_guidance,
             guess_mode=guess_mode,
-            blind_control=True
+            # Prepare a zero-valued unconditional condition. Whether it is
+            # used for all steps or only the warm-up interval is decided below.
+            blind_control=True,
         )
-        hint_uncond, hint_text = hint.chunk(2)
+        if do_classifier_free_guidance and not guess_mode:
+            hint_uncond, hint_text = prepared_hint.chunk(2)
+        else:
+            # No-CFG and guess mode contain only the conditional batch. The
+            # old unconditional split halved this tensor and caused a batch
+            # mismatch in both modes.
+            hint_uncond = None
+            hint_text = prepared_hint
         
 
         # Prepare hidden states for cross attention
@@ -797,14 +818,22 @@ class SKDreamPipeline(DiffusionPipeline):
                 latent_model_input = torch.cat([latents] * 2) if do_classifier_free_guidance else latents
                 latent_model_input = self.scheduler.scale_model_input(latent_model_input, t)
                 
-                if blind_control_until_step is not None and i < blind_control_until_step:
-                    hint = torch.cat([hint_uncond, hint_text], dim=0)
+                if do_classifier_free_guidance and not guess_mode:
+                    use_blind_control = blind_control or (
+                        blind_control_until_step is not None and i < blind_control_until_step
+                    )
+                    if use_blind_control:
+                        step_hint = torch.cat([hint_uncond, hint_text], dim=0)
+                    else:
+                        step_hint = torch.cat([hint_text, hint_text], dim=0)
                 else:
-                    hint = torch.cat([hint_text, hint_text], dim=0)
+                    # In guess mode ControlNet runs only on the conditional
+                    # half; without CFG there is only one batch.
+                    step_hint = hint_text
                 
                 noise_pred = self._forward(
                     latent_model_input=latent_model_input,
-                    controlnet_cond=hint,
+                    controlnet_cond=step_hint,
                     t=t,
                     encoder_hidden_states=encoder_hidden_states,
                     controlnet_conditioning_scale=controlnet_conditioning_scale,

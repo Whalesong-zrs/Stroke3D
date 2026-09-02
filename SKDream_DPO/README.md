@@ -49,8 +49,10 @@ The pipeline uses the MVDream Diffusers checkpoint
 [`lzq49/mvdream-sd21-diffusers`](https://huggingface.co/lzq49/mvdream-sd21-diffusers),
 an SFT SKDream controlnet, the
 [`dinov2_vitl14_reg`](https://github.com/facebookresearch/dinov2) checkpoint, and the
-SKA scorer checkpoint. The Stroke3D data and final SKA-DPO weights will be distributed
-separately after their release metadata and licenses have been reviewed.
+SKA scorer checkpoint. The Stroke3D data and final SKA-DPO weights are organized under
+separate subfolders in the single Hugging Face repository
+[`zhaors00/stroke3d`](https://huggingface.co/zhaors00/stroke3d). Review the component
+cards and upstream licenses before use.
 
 ## 1. Build preference pairs
 
@@ -123,6 +125,11 @@ historical entry points are:
 - `infer_refine.py` and `uv_refine.py`: differentiable texture refinement;
 - `infer_mesh_{origin,sft,dpo,sft_dpo}.sh`: compatibility aliases for the common
   wrapper below.
+
+The bundled InstantMesh tree preserves the downstream reconstruction code from
+the historical project backup. UV refinement receives the repeat index through
+`--repeat_idx`, so object IDs containing underscores and repeat counts above ten
+are handled without path rewriting.
 
 Configure all machine-specific paths through environment variables:
 

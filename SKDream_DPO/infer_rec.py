@@ -3,16 +3,11 @@ import argparse
 from pathlib import Path
 import numpy as np
 import torch
-import rembg
-from PIL import Image
 import pickle
 from torchvision.transforms import v2
 from pytorch_lightning import seed_everything
 from omegaconf import OmegaConf
-from einops import rearrange, repeat
 from tqdm import tqdm
-from huggingface_hub import hf_hub_download
-from diffusers import DiffusionPipeline, EulerAncestralDiscreteScheduler
 from skimage import io as skio
 from instantmesh.utils.train_util import instantiate_from_config
 from instantmesh.utils.camera_util import (
@@ -22,8 +17,7 @@ from instantmesh.utils.camera_util import (
     get_custom_input_cameras
 )
 from instantmesh.utils.mesh_util import save_obj, save_obj_with_mtl
-from instantmesh.utils.infer_util import remove_background, resize_foreground, save_video
-from PIL import Image
+from instantmesh.utils.infer_util import save_video
 
 def get_render_cameras(batch_size=1, M=120, radius=5.0, elevation=20.0, is_flexicubes=False):
     """
@@ -77,14 +71,19 @@ parser = argparse.ArgumentParser()
 parser.add_argument('config', type=str, help='Path to config file.')
 parser.add_argument('input_path', type=str, help='Path to input image or directory.')
 parser.add_argument('--output_path', type=str, default='outputs/', help='Output directory.')
-parser.add_argument('--diffusion_steps', type=int, default=75, help='Denoising Sampling steps.')
+parser.add_argument(
+    '--diffusion_steps',
+    type=int,
+    default=75,
+    help='Deprecated compatibility option; reconstruction does not run diffusion.',
+)
 parser.add_argument('--gpu', type=int, default=0, help='GPU Device to use.')
 parser.add_argument('--seed', type=int, default=66, help='Random seed for sampling.')
-parser.add_argument('--scale', type=float, default=1.0, help='Scale of generated object.')
+parser.add_argument('--scale', type=float, default=1.0, help='Deprecated compatibility option; currently ignored.')
 parser.add_argument('--distance', type=float, default=4.0, help='Render distance.')
 parser.add_argument('--num_view', type=int, default=4, choices=[4, 6], help='Number of input views.')
 parser.add_argument('--repeat_num', type=int, default=4, help='Number of repeats.')
-parser.add_argument('--no_rembg', action='store_true', help='Do not remove input background.')
+parser.add_argument('--no_rembg', action='store_true', help='Deprecated compatibility option; RGBA masks are used.')
 parser.add_argument('--export_texmap', action='store_true', help='Export a mesh with texture map.')
 parser.add_argument('--save_video', action='store_true', help='Save a circular-view video.')
 parser.add_argument('--save_img', action='store_true', help='Save rendered imgs.')
@@ -179,7 +178,9 @@ for i in range(len(folders)):
             continue
         print(f'[{idx+1}/{len(outputs)}] Creating {name} ...')
         cam_dict = sample['camera']
-        input_cameras =get_custom_input_cameras(cam_dict['azimuth'],camera_dict['elevation'],radius=radius).to(device)
+        input_cameras = get_custom_input_cameras(
+            cam_dict['azimuth'], cam_dict['elevation'], radius=radius
+        ).to(device)
 
         images = sample['images'].unsqueeze(0).to(device)
         images = v2.functional.resize(images, 320, interpolation=3, antialias=True).clamp(0, 1)

@@ -30,8 +30,9 @@ preference optimization. Rankings inherit limitations from SKDream, foreground
 segmentation, DINOv2, and the learned SKA scorer. A score preference is not a general
 measure of image quality.
 
-## Release status
+## Licensing note
 
-The archive is staged locally but is not yet approved for public upload. Before release,
-the authors should attach the applicable TextuRig/Objaverse-XL asset-level license map,
-choose the dataset license, and review whether every derived render is redistributable.
+No blanket dataset license is asserted. Users must review the applicable
+TextuRig/Objaverse-XL source-asset terms before redistribution or commercial use. The
+camera metadata uses legacy Python pickle files and must only be loaded from a trusted
+Stroke3D release.

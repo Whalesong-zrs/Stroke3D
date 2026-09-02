@@ -8,15 +8,17 @@ Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 
 ## Code
 
-- [`SkDiff/`](SkDiff/) contains the skeleton latent VAE, diffusion, and
-  ControlNet components.
+- [`SkDiff/`](SkDiff/) is the legacy archival snapshot of the skeleton latent
+  VAE, diffusion, and ControlNet components. It is not maintained in this
+  release and may still contain environment-specific historical settings.
 - [`SKDream_DPO/`](SKDream_DPO/) contains the cleaned SKDream/SKA-DPO pipeline
   for preference-pair construction, training, inference, and evaluation.
 
-Please follow the README inside each module for its environment, data layout,
-and commands. Datasets and the SKA-DPO checkpoint are not stored in this Git
-repository; their links will be added after the release metadata and licenses
-have been reviewed.
+The maintained open-source path is `SKDream_DPO`; follow its README for the
+environment, data layout, and commands. Datasets and checkpoints are not stored
+in this Git repository. They will be collected in the single Hugging Face model
+repository [`zhaors00/stroke3d`](https://huggingface.co/zhaors00/stroke3d), with
+separate subfolders for each component.
 
 ## Release status
 

@@ -24,8 +24,8 @@ The model is designed for four-view skeleton-conditioned generation at 256 x 256
 inherits limitations and usage restrictions from its base model, SFT checkpoint,
 training data, DINOv2 features, SKA scorer, and foreground-removal models.
 
-## Release status
+## Licensing note
 
-The inference files are staged locally without optimizer state. Before public upload,
-the authors should choose a model license and document the licenses and provenance of
-the base and SFT checkpoints.
+Only inference files are distributed; optimizer state is excluded. No blanket license
+is asserted for upstream base or SFT checkpoint components. Users must review their
+licenses and provenance before redistribution or commercial use.

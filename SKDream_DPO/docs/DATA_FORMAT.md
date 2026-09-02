@@ -19,7 +19,9 @@ dataset_root/
 `train` and `eval` ID lists. The current training script consumes the `train` split.
 
 `cam_dict.pkl` stores the synchronized camera values used for the four views. It must
-contain `elevation` and `azimuth` sequences with at least `num_views` elements.
+contain `elevation` and `azimuth` sequences with at least `num_views` elements. It is
+a legacy Python pickle and must only be loaded from a trusted Stroke3D release; never
+replace it with an untrusted pickle.
 
 Validate a prepared dataset before training:
 

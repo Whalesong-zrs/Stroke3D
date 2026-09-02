@@ -509,14 +509,15 @@ class DatasetRec(torch.utils.data.Dataset):
     """Basic dataset interface"""
     def __init__(self,folder,FLAGS,val=False): 
         super().__init__()
-        if '_' in folder.split('/')[-1]:
-            self.repeat_idx = folder.split('/')[-1].split('_')[-1]
-            self.folder = folder[:-2]
-        else:
-            self.folder = folder
-            self.repeat_idx = None
+        # The repeat index is explicit: object IDs may contain underscores and
+        # repeat numbers may have more than one digit. The old ``folder[:-2]``
+        # convention silently pointed those cases at the wrong directory.
+        self.folder = str(Path(folder).expanduser())
+        repeat_idx = getattr(FLAGS, 'repeat_idx', None)
+        self.repeat_idx = str(repeat_idx) if repeat_idx is not None else None
         self.FLAGS = FLAGS
-        self.cam_dict = pickle.load(open(os.path.join(self.folder,'cam_dict.pkl'),'rb'))
+        with open(os.path.join(self.folder, 'cam_dict.pkl'), 'rb') as camera_file:
+            self.cam_dict = pickle.load(camera_file)
         self.num_views = len(self.cam_dict['mvp'])
         self.val = val
 
@@ -528,6 +529,7 @@ class DatasetRec(torch.utils.data.Dataset):
     def __getitem__(self,idx):
         data = {}
         idx = idx%self.num_views
+        nrm = None
         if self.repeat_idx is not None:
             img = io.imread(os.path.join(self.folder,f'tile_{self.repeat_idx}_{idx}.png'))
             try:
@@ -576,6 +578,12 @@ if __name__ == "__main__":
     parser.add_argument('--base_mesh', type=str, default=None)
     parser.add_argument('--out_dir', type=str, default=None)
     parser.add_argument('--data_dir', type=str, default=None)
+    parser.add_argument(
+        '--repeat_idx',
+        type=int,
+        default=None,
+        help='Explicit repeat index used by tile_<repeat>_<view>.png inputs.',
+    )
     parser.add_argument("--local_rank", type=int, default=0, help="For distributed training: local_rank")
     parser.add_argument("--seed", type=int, default=42, help="A seed for reproducible training.")
     

@@ -135,6 +135,8 @@ class SKDreamDatasetDPO(Dataset):
 
         meta_path = self.meta_dir / item_id / "cam_dict.pkl"
         try:
+            # This is the historical Stroke3D camera format. Only load metadata
+            # from a trusted dataset release because Python pickle is executable.
             with meta_path.open("rb") as handle:
                 camera_meta = pickle.load(handle)
         except FileNotFoundError as exc:
