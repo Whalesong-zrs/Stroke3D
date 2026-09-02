@@ -1,0 +1,58 @@
+joints joint0 -0.04434820 0.23605500 0.03572010
+joints joint1 -0.08902330 0.21074200 0.00492418
+joints joint2 0.01323040 0.22330400 0.02325310
+joints joint3 -0.02283230 0.20164700 0.01114620
+joints joint4 -0.03592310 0.21305600 0.01863830
+joints joint5 0.04837430 -0.03752410 -0.02166190
+joints joint6 -0.10779000 0.14369000 0.03437960
+joints joint7 0.11630100 -0.00178937 0.01377710
+joints joint8 -0.09500290 0.11450600 0.02629880
+joints joint9 -0.03092000 -0.16626100 0.01492280
+joints joint10 -0.05098030 -0.42693600 -0.02804690
+joints joint11 0.02216330 -0.48215700 0.05259600
+joints joint12 -0.01636160 -0.04453710 0.00064377
+joints joint13 0.09191720 -0.02982500 0.00062443
+joints joint14 -0.02550200 -0.24656400 0.00121161
+joints joint15 -0.11178800 0.31549100 0.08302010
+joints joint16 -0.10436100 0.48160200 0.06255180
+joints joint17 0.01743790 -0.48147900 0.05342790
+joints joint18 -0.02206260 0.25618700 0.05140430
+joints joint19 -0.11258200 0.45236000 0.09654430
+joints joint20 -0.11142700 0.30906400 0.09558200
+joints joint21 0.02034200 -0.48523400 0.06830540
+joints joint22 -0.01045800 0.20510800 0.01218670
+joints joint23 -0.02904620 0.13882700 -0.00153279
+joints joint24 0.04230910 0.21060100 0.00498124
+joints joint25 -0.04339480 -0.45243600 -0.00452733
+joints joint26 -0.05268100 0.08597310 0.01278790
+joints joint27 -0.03191720 0.21938800 0.02471760
+joints joint28 -0.05965260 0.22484600 0.02403140
+root joint0
+hier joint0 joint27
+hier joint27 joint18
+hier joint27 joint4
+hier joint4 joint28
+hier joint4 joint1
+hier joint4 joint3
+hier joint3 joint23
+hier joint3 joint22
+hier joint23 joint26
+hier joint22 joint24
+hier joint22 joint2
+hier joint26 joint12
+hier joint26 joint8
+hier joint12 joint5
+hier joint12 joint9
+hier joint8 joint6
+hier joint5 joint13
+hier joint9 joint14
+hier joint6 joint15
+hier joint13 joint7
+hier joint14 joint10
+hier joint15 joint19
+hier joint15 joint20
+hier joint10 joint25
+hier joint19 joint16
+hier joint25 joint17
+hier joint17 joint11
+hier joint17 joint21

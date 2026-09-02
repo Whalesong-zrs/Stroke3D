@@ -15,7 +15,18 @@ and dataset they download.
   <https://github.com/facebookresearch/dinov2>
 - The DPO objective follows Diffusion-DPO:
   <https://github.com/SalesforceAIResearch/DiffusionDPO>
+- The downstream multi-view reconstruction module is derived from InstantMesh:
+  <https://github.com/TencentARC/InstantMesh>
+- Differentiable rendering and texture refinement use NVIDIA nvdiffrast and code
+  carrying file-level NVIDIA copyright notices:
+  <https://github.com/NVlabs/nvdiffrast>
+- UV parameterization and CUDA neural textures use xatlas and tiny-cuda-nn:
+  <https://github.com/jpcy/xatlas>
+  <https://github.com/NVlabs/tiny-cuda-nn>
 
-No third-party checkpoints or datasets are stored in this Git repository. A
-repository-wide license for the Stroke3D-authored code should be selected by the
-copyright holders before calling the release complete.
+No third-party checkpoints are stored in this Git repository. The restored
+`objsk_eval2/` directory contains historical evaluation inputs; its provenance and
+redistribution status should be verified before a packaged data release. A
+repository-wide license for the Stroke3D-authored code should also be selected by
+the copyright holders. Preserve all file-level copyright headers in `instantmesh/`,
+`geometry/`, and `render/`, and verify their redistribution terms before release.

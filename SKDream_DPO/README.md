@@ -12,16 +12,21 @@ DPO objective.
 
 ## Scope
 
-The public code is intentionally limited to the reproducible SKA-DPO path:
+This module contains the reproducible SKA-DPO path and the original downstream
+SKDream mesh-synthesis components:
 
 - SKDream model and multi-view attention modules;
 - preference-pair construction with a configurable SKA margin;
 - the SKA scorer and evaluation script;
 - the paired dataset loader and diffusion-DPO trainer;
-- skeleton-conditioned multi-view inference.
+- skeleton-conditioned multi-view inference;
+- InstantMesh-based multi-view reconstruction;
+- optional tile upscaling and UV/texture refinement;
+- the historical `objsk_eval2` evaluation inputs.
 
-Mesh reconstruction, texture refinement, embedded evaluation assets, checkpoints,
-and generated data are not committed to this code repository.
+Checkpoints and generated training data are not committed to this Git repository.
+The mesh code is kept for end-to-end SKDream compatibility, but has additional
+third-party dependencies and licensing notices; see [`THIRD_PARTY.md`](THIRD_PARTY.md).
 
 ## Environment
 
@@ -33,6 +38,12 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
+
+For InstantMesh reconstruction and texture refinement, install the additional
+dependencies in `requirements-mesh.txt`. The differentiable renderer also requires
+CUDA-compatible builds of
+[`nvdiffrast`](https://github.com/NVlabs/nvdiffrast) and
+[`tiny-cuda-nn`](https://github.com/NVlabs/tiny-cuda-nn).
 
 The pipeline uses the MVDream Diffusers checkpoint
 [`lzq49/mvdream-sd21-diffusers`](https://huggingface.co/lzq49/mvdream-sd21-diffusers),
@@ -100,6 +111,36 @@ bash scripts/evaluate_ska.sh
 
 Set `DINOV2_REPO=/path/to/dinov2` in the preparation or evaluation wrappers to use a
 local DINOv2 checkout instead of downloading its Torch Hub definition.
+
+## 4. Mesh reconstruction and texture refinement
+
+The optional downstream path converts SKDream multi-view images into a coarse mesh,
+upscales the views with Tile/Canny ControlNet, and optimizes UV textures. The restored
+historical entry points are:
+
+- `infer_rec.py`: InstantMesh reconstruction;
+- `infer_tile.py`: view-aware image upscaling;
+- `infer_refine.py` and `uv_refine.py`: differentiable texture refinement;
+- `infer_mesh_{origin,sft,dpo,sft_dpo}.sh`: compatibility aliases for the common
+  wrapper below.
+
+Configure all machine-specific paths through environment variables:
+
+```bash
+export DATA_DIR=/path/to/eval_inputs
+export MV_DIR=/path/to/skdream_multiview_outputs
+export COARSE_DIR=/path/to/coarse_meshes
+export REFINE_DIR=/path/to/refined_meshes
+export GPU=0
+export REPEAT_NUM=4
+bash scripts/run_mesh_pipeline.sh
+```
+
+`DATA_DIR` must contain `eval.json`; the included `objsk_eval2/` directory provides
+the historical evaluation skeletons and metadata. Model locations in
+`config/instant-mesh-large.yaml` and the Tile/Canny checkpoint arguments of
+`infer_tile.py` may be overridden for a local installation. Set any of
+`RUN_RECONSTRUCTION`, `RUN_TILING`, or `RUN_REFINEMENT` to `0` to skip that stage.
 
 ## Citation
 

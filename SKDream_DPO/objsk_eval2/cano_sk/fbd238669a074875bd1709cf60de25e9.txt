@@ -1,0 +1,64 @@
+joints Waist -0.00083334 -0.09405904 -0.02773871
+joints EndHips -0.00428346 -0.13638759 -0.12700946
+joints LThigh 0.06153751 -0.11571299 -0.02126988
+joints LLeg 0.08628904 -0.12598237 -0.00358895
+joints LFoot 0.09836600 -0.14887414 0.00503807
+joints LToe 0.11101888 -0.15707241 0.01407649
+joints EndLToe 0.13207512 -0.15707220 0.02911775
+joints RThigh -0.06198966 -0.11571411 -0.02226246
+joints RLeg -0.08449070 -0.12716977 -0.00518025
+joints RFoot -0.09781757 -0.14887546 0.00473449
+joints RToe -0.11106156 -0.15707393 0.01288240
+joints EndRToe -0.13310135 -0.15707403 0.02644164
+joints Head 0.00037401 0.01846007 -0.00292389
+joints EndHead 0.00037368 0.08625893 0.04845619
+joints LShoulder 0.00360233 -0.00599932 0.00252563
+joints LArm 0.07118835 0.00700010 -0.00333116
+joints LForeArm 0.12180714 0.02626518 -0.00333167
+joints LHand 0.15406248 0.13834579 -0.00333186
+joints EndLHand 0.22843621 -0.06141835 -0.00333174
+joints LFingerA2 0.26234319 0.19801959 -0.00333150
+joints RShoulder -0.00285436 -0.00599932 0.00252563
+joints RArm -0.07044057 0.00700010 -0.00333114
+joints RForeArm -0.12105945 0.02626416 -0.00333172
+joints RHand -0.15331784 0.13834273 -0.00333186
+joints EndRHand -0.22768954 -0.06142039 -0.00333176
+joints RFingerA2 -0.26159552 0.19801959 -0.00333172
+joints EndRFingerA2 -0.50818566 0.26217209 -0.00333178
+joints EndRFingerB -0.35360609 0.04474057 -0.00333177
+joints LFingerA2.001 0.49181434 0.24863153 -0.00094702
+joints LHand.001 0.36010791 0.04691365 -0.01257107
+joints EndHead.001 -0.05816932 0.16626940 0.06136040
+joints EndHead.002 0.06709978 0.16320191 0.05631270
+root Waist
+hier Waist EndHips
+hier Waist LThigh
+hier Waist RThigh
+hier Waist Head
+hier Waist LShoulder
+hier Waist RShoulder
+hier LThigh LLeg
+hier RThigh RLeg
+hier Head EndHead
+hier LShoulder LArm
+hier RShoulder RArm
+hier LLeg LFoot
+hier RLeg RFoot
+hier EndHead EndHead.001
+hier EndHead EndHead.002
+hier LArm LForeArm
+hier RArm RForeArm
+hier LFoot LToe
+hier RFoot RToe
+hier LForeArm LHand
+hier RForeArm RHand
+hier LToe EndLToe
+hier RToe EndRToe
+hier LHand EndLHand
+hier LHand LFingerA2
+hier LHand LHand.001
+hier RHand EndRHand
+hier RHand RFingerA2
+hier RHand EndRFingerB
+hier LFingerA2 LFingerA2.001
+hier RFingerA2 EndRFingerA2

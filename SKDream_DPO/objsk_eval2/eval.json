@@ -1,0 +1,553 @@
+{
+    "4a0c523206464e40819f47d1770453dc": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "An octopus,a bulbous head, large eyes, and long, flexible arms lined with suction cups."
+    },
+    "2d9acde21348479aa461053dc16acf24": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "A creature with a pig head and fish body"
+    },
+    "63a4f315daa5466fa6765b3feb70b3c9": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "A carp, elongated body, large golden scales, barbels near the mouth, long dorsal fin, deeply forked tail."
+    },
+    "05efd966a8cf49e7ae1bfbc8f556ed46": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "A rattlesnake, thick body, patterned with dark diamond-shaped blotches on a lighter background, triangular head, vertical pupils, segmented rattle at the tail."
+    },
+    "e9d91748653145b5a3bc4e655e1c0850": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "A sea turtle, broad oval shell, smooth olive-green scales, flipper-like limbs, small head with a pointed beak."
+    },
+    "4fe5b4e1c32c4bc3adabbaa86bf43ead": {
+        "class": 0,
+        "sub_class": 0,
+        "caption": "A dolphin, streamlined body, smooth gray skin, dorsal fin, elongated beak-like snout, flippers, forked tail fin."
+    },
+    "256961bd46f44619a20dff9cb78681c5": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A swan, long neck, white feathers, orange bill with a black base, curved elegant wings, short tail."
+    },
+    "695103af832e47f2809f3888373bb0e9": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A duck, rounded body, waterproof feathers, flat bill, webbed feet, wings."
+    },
+    "64212f86eeb544c3be69a7b5cdd2a308": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A Plesiosaur, elongated neck, broad body, four large paddle-like limbs, tail, small head."
+    },
+    "04726f12ea17446e900d016bd2674155": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A penguin, black back, white belly, flipper-like wings, short legs, webbed feet."
+    },
+    "f8ccf86cae174b10ba4ceba818071c18": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A T-rex, short arms, head with sharp teeth, powerful legs, long heavy tail."
+    },
+    "48b70e34b3254812b6c89bb677cae4b6": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A rooster, bright red comb and wattles, colorful feathers, long tail feathers, sturdy legs."
+    },
+    "400cba39bcb9453ca7f1291c453aa15d": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A dinosaur monster, thick scaly skin, spiked tail, massive clawed feet."
+    },
+    "797fcf7663d94295a6d582b77b94ae84": {
+        "class": 0,
+        "sub_class": 1,
+        "caption": "A lizard man, humanoid body, scaly green skin, long tail, clawed hands and feet."
+    },
+    "6ce0b9f94f00433c92f21f3d8f844332": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A polar bear, large body, broad head, black nose, powerful limbs, large paws."
+    },
+    "377bfffb7a4d4f38be67f143dcb4cb0a": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A Golden Retriever, golden coat, friendly expression, floppy ears, and a wagging tail."
+    },
+    "ff1f6a02250b4a5693722921f0169afb": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A brown rat, brown fur with a lighter underbelly, long tail, small ears, and a pointed snout."
+    },
+    "e86a709003ac4c7e8b290dfb23feb7cb": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A giraffe, tall stature, long neck, patterned with brown patches, small horns, long legs."
+    },
+    "c9cf84cbc8e34cf4876b86774cf731e8": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A donkey, grey fur, long ears, short mane, and a tufted tail."
+    },
+    "f78ad5dfb4cf4400a006a46ffe2889f8": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A goat, short white fur, curved horns, beard under chin, short tail."
+    },
+    "4e18d3bad0c84603aca3f44aaac2a82b": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A lizard, elongated body, scaly skin, long tail, small head, four legs."
+    },
+    "50cf455eff9047aab0900846f54afd29": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A bull, muscular body, short black fur, large head, curved horns, broad shoulders, sturdy legs."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A wolf, thick grey fur, pointed ears, bushy tail, strong legs."
+    },
+    "08fc10a588364aa690159c141dd49417": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A gorilla, robust body, black fur, broad chest, small eyes, flat nose, large hands."
+    },
+    "ca45733b8c354686a3d1e34fa4ab292c": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A black and red spider, small rounded body, glossy black color, red hourglass mark, eight legs."
+    },
+    
+    "693a376d9a7f4a2c805a7fd315704ce2": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A scorpion, segmented body, curved tail with stinger, two large pincers, eight legs, dark brown."
+    },
+    
+    "0301661857294fc9a3dccb4bea016ecb": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A cockroach, flat oval body, long antennae, six legs, wings folded on the back."
+    },
+    
+    "22f2f969bb5b455bb384246218dca7f9": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A crab, reddish-brown rounded body, hard shell, eight walking legs, two clawed pincers."
+    },
+    
+    "9d544dd9576a474aaf5a7ec65bc89473": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "Charizard in Pokemon, large dragon-like creature, orange scales, blue wings, fiery tail."
+    },
+    
+    "ff4bdb9e2aac4b39af862758667d4417": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A dragon, large scaled body, long serpentine tail, expansive wings, sharp claws, horns on the head."
+    },
+    
+    "fbd238669a074875bd1709cf60de25e9": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A small bat with leathery wings and sharp, pointed ears,dark fur. Its wings are spread wide."
+    },
+    
+    "222a64990c7347778377f8a065e342b7": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A seagull, white feathers with gray on the back and wings, yellow beak, webbed feet."
+    },
+
+    "ce4213c45a864884acd781ce657338f8": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "Hand skeleton"
+    },
+    "127605e93d8d4954adf65d5878a99ce8": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A walking man in a suit, with a hat"
+    },
+    
+    "1ef08b46cc8b4d7dbf28ecac87975934": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "Upper body of a man"
+    },
+    "57a11beb159f40ab9457154fa6cf738d": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A clown with colorful makeup, wearing a polka-dotted suit. He holds a star-shaped balloon in one hand."
+    },
+    "88a900374cc94bdeb14400195a50c00c": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "An alien, with a large head, big eyes, and a small body"
+    },
+    "d2fc14c6da9a4002bb8ba02bedf21de8": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A zombie, green skin, torn clothes"
+    },
+    "2a86690efb86401ca701b5c854c1f85d": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A cartoon character in Fall Guys, colorful candy-like body and thin arms and legs"
+    },
+    "84094e8d5e724b5c882cf576ca12e44e": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "statue of Liberty"
+    },
+    "706921e0742548acbe3c1bf651737178": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A monster character with long arms"
+    },
+    "58567cd6a95d4c1eb9b9a2eb79ac12b4": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "Sonic The Hedgehog"
+    },
+    "63a355c691ec44d0be2d26beed37c7c4": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A humanoid character made of tree stump"
+    },
+    "6a79ab6b70b747b68e787da1458ab582": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "Wukong in Dragon Ball"
+    },
+    "1167b912622246a8bed6326110cd5473": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A robot"
+    },
+    "d431432370084b86866c3fc0f79edaec": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A humanoid monster character, antlers on head, sharp claws"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A potted plant"
+    },
+    
+    "24d10e00e6294b33a4857aae5afa956e": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A red rose with stem and leaves"
+    },
+    "a9ca560cf2444da7a20d1bc13d9e7c28": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A dead tree,bare branches"
+    },
+    "36402bd249ba4e5391a10493ee48b448": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A towering maple tree with a sturdy trunk and a wide canopy of vibrant green leaves."
+    },
+    "013144890fc24115937487781e8d3953": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "Grass weeds."
+    },
+    "06e7ba5232a54e0384148da4fa9702ed": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A majestic tree, with a thick trunk and a wide canopy of lush, green leaves. Its branches spread out gracefully."
+    },
+    "64854a2acb1d4808943d6663f1cdc06b": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A tree stump, roots and trunk"
+    },
+    "ad75db58914d4f9da6a2952fb7bd6ba9": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A green cactus, with multiple arms and small spines covering its surface."
+    },
+    "7d31fbefa57e43439094633576976be2": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A potted plant, with vibrant green leaves and a healthy stem. The plant sits in a simple terracotta pot, with rich soil visible around the base."
+    },
+    "06eb7b29293d41878ec5647e6f1328f8": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "An oak tree, with a sturdy trunk and sprawling branches covered in lush, green leaves."
+    },
+    "127605e93d8d4954adf65d5878a99ce8_1": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A man in black suit"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_2": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A woman in red dress"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_3": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "Spiderman"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_4": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "An astronaut"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_5": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "An icecream"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_6": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A rocket"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_7": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A man, dragon-like large wings"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_8": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A monster,round head, four arms"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_9": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A dwarf fighter wearing armor, short and fat, hairy"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_10": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A body builder with a wide shoulder"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_11": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "An athlete, running"
+    },
+    "127605e93d8d4954adf65d5878a99ce8_12": {
+        "class": 1,
+        "sub_class": 0,
+        "caption": "A karate master"
+    },
+
+    "24bae7f3e42642ceb3f08a78085d1288_1": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A cat."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_2": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A red fox."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_3": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A bull dog."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_4": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog, Husky."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_5": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A chair made of wood."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_6": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A fish."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_7": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog, Husky, big head,large ears."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_8": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog, two heads, double heads."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_9": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog, jumping."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_10": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog, sitting."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_11": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog,long torso."
+    },
+    "24bae7f3e42642ceb3f08a78085d1288_12": {
+        "class": 0,
+        "sub_class": 2,
+        "caption": "A dog with spiral tail."
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_1": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A sakura tree"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_2": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "Lily flower"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_3": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "Green grass"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_4": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A coral"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_5": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A torch with flame"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_6": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A plant with bent stem"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_7": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A lush tree,green leaves"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_8": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A lush tree,green leaves"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_9": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A plant with leaves and roots"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_10": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A bare tree with branches"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_11": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A plant with two legs, Oddish, Pokemon"
+    },
+    "0d94fa80e87e49e2b0747d1252b9e3bd_12": {
+        "class": 2,
+        "sub_class": 0,
+        "caption": "A potted plant"
+    },
+    "ca45733b8c354686a3d1e34fa4ab292c_1": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A black and red spider, small rounded body, glossy black color, red hourglass mark, eight legs."
+    },
+    "ca45733b8c354686a3d1e34fa4ab292c_2": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A black and red spider, small rounded body, glossy black color, red hourglass mark, eight legs."
+    },
+    "693a376d9a7f4a2c805a7fd315704ce2_1": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A scorpion, segmented body, curved tail with stinger, two large pincers, eight legs, dark brown."
+    },
+    "693a376d9a7f4a2c805a7fd315704ce2_2": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A scorpion, segmented body, curved tail with stinger, two large pincers, eight legs, dark brown."
+    },
+    "0301661857294fc9a3dccb4bea016ecb_1": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A cockroach, flat oval body, long antennae, six legs, wings folded on the back."
+    },
+    "0301661857294fc9a3dccb4bea016ecb_2": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A cockroach, flat oval body, long antennae, six legs, wings folded on the back."
+    },
+    "22f2f969bb5b455bb384246218dca7f9_1": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A crab, reddish-brown rounded body, hard shell, eight walking legs, two clawed pincers."
+    },
+    "22f2f969bb5b455bb384246218dca7f9_2": {
+        "class": 0,
+        "sub_class": 3,
+        "caption": "A crab, reddish-brown rounded body, hard shell, eight walking legs, two clawed pincers."
+    },
+    "9d544dd9576a474aaf5a7ec65bc89473_1": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "Charizard in Pokemon, large dragon-like creature, orange scales, blue wings, fiery tail."
+    },
+    "9d544dd9576a474aaf5a7ec65bc89473_2": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "Charizard in Pokemon, large dragon-like creature, orange scales, blue wings, fiery tail."
+    },
+    "ff4bdb9e2aac4b39af862758667d4417_1": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A dragon, large scaled body, long serpentine tail, expansive wings, sharp claws, horns on the head."
+    },
+    "ff4bdb9e2aac4b39af862758667d4417_2": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A dragon, large scaled body, long serpentine tail, expansive wings, sharp claws, horns on the head."
+    },
+    "fbd238669a074875bd1709cf60de25e9_1": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A small bat with leathery wings and sharp, pointed ears,dark fur. Its wings are spread wide."
+    },
+    "fbd238669a074875bd1709cf60de25e9_2": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A small bat with leathery wings and sharp, pointed ears,dark fur. Its wings are spread wide."
+    },
+    "222a64990c7347778377f8a065e342b7_1": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A seagull, white feathers with gray on the back and wings, yellow beak, webbed feet."
+    },
+    "222a64990c7347778377f8a065e342b7_2": {
+        "class": 0,
+        "sub_class": 4,
+        "caption": "A seagull, white feathers with gray on the back and wings, yellow beak, webbed feet."
+    }
+}

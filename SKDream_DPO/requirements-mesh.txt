@@ -1,0 +1,18 @@
+# Install the SKDream/SKA-DPO environment first.
+-r requirements.txt
+
+fvcore==0.1.5.post20221221
+imageio==2.28.1
+lpips==0.1.4
+matplotlib==3.7.1
+open3d==0.18.0
+pandas==2.0.1
+PyMCubes==0.1.4
+pytorch-lightning==2.1.2
+torchmetrics==0.11.4
+trimesh==4.3.2
+webdataset==0.2.86
+xatlas==0.0.9
+
+# The renderer also imports nvdiffrast and tiny-cuda-nn. Install versions
+# compatible with the local CUDA/PyTorch toolchain from their upstream repos.

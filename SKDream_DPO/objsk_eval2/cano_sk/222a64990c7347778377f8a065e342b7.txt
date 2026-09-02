@@ -1,0 +1,40 @@
+joints Waist 0.00131452 -0.03598858 -0.06797551
+joints LTail 0.03836722 -0.07138997 -0.20744470
+joints LThigh 0.06081040 -0.08966574 -0.00897002
+joints LLeg 0.06081040 -0.12019075 -0.04454293
+joints LFoot 0.06081040 -0.16158334 -0.02508431
+joints LToe 0.06081040 -0.16258466 0.02457008
+joints RTail -0.03573819 -0.07139016 -0.20744509
+joints RThigh -0.05818136 -0.08966574 -0.00897002
+joints RLeg -0.05818136 -0.12019075 -0.04454274
+joints RFoot -0.05818136 -0.16158354 -0.02508411
+joints RToe -0.05818136 -0.16258486 0.02457028
+joints Spine 0.00131452 0.05019894 0.01435865
+joints Head 0.00131452 0.17816166 0.07168112
+joints Jaw 0.00131452 0.17731650 0.18164584
+joints LArm 0.13722732 0.12265013 0.04023106
+joints LForeArm 0.30817615 0.15371384 0.06625918
+joints LHand 0.49392059 0.14455583 0.05926477
+joints RArm -0.13459828 0.12265205 0.04023106
+joints RForeArm -0.31704961 0.15304811 0.06213756
+joints RHand -0.50607941 0.14452105 0.05510983
+root Waist
+hier Waist LTail
+hier Waist LThigh
+hier Waist RTail
+hier Waist RThigh
+hier Waist Spine
+hier LThigh LLeg
+hier RThigh RLeg
+hier Spine Head
+hier Spine LArm
+hier Spine RArm
+hier LLeg LFoot
+hier RLeg RFoot
+hier Head Jaw
+hier LArm LForeArm
+hier RArm RForeArm
+hier LFoot LToe
+hier RFoot RToe
+hier LForeArm LHand
+hier RForeArm RHand
