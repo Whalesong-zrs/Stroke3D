@@ -34,6 +34,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--controlnet", required=True, help="SKDream checkpoint or Hub ID")
     parser.add_argument(
+        "--controlnet-subfolder",
+        help="Optional subfolder when --controlnet is a Hugging Face repository ID",
+    )
+    parser.add_argument(
         "--base-model",
         default="lzq49/mvdream-sd21-diffusers",
         help="MVDream Diffusers checkpoint or Hub ID",
@@ -120,6 +124,7 @@ def main() -> None:
         num_views=args.num_views,
         weights_dtype=torch.float16,
         device=device,
+        controlnet_subfolder=args.controlnet_subfolder,
     )
     rembg_session = new_session("isnet-general-use")
     rng = np.random.default_rng(args.seed)

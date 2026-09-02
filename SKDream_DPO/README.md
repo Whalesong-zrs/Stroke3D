@@ -102,7 +102,8 @@ diffusion-DPO inverse temperature and defaults to the experimental value `5000`.
 python infer_mv.py \
   --data-dir /path/to/eval_inputs \
   --output-dir eval/ska_dpo \
-  --controlnet /path/to/final_skdream
+  --controlnet zhaors00/stroke3d \
+  --controlnet-subfolder skdream-ska-dpo
 
 export EVAL_JSON=/path/to/eval_inputs/eval.json
 export IMAGE_DIR=eval/ska_dpo

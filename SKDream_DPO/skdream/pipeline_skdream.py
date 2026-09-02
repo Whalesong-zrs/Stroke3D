@@ -988,10 +988,13 @@ def load_skdream_pipeline(
     weights_dtype,
     num_views,
     device,
+    controlnet_subfolder=None,
 ):
 
     controlnet = MultiViewControlNetModel.from_pretrained(
-        pretrained_controlnet_name_or_path, torch_dtype=weights_dtype
+        pretrained_controlnet_name_or_path,
+        subfolder=controlnet_subfolder,
+        torch_dtype=weights_dtype,
     ).to(device)
 
     pipe = SKDreamPipeline.from_pretrained(
