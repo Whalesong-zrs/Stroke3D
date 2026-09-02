@@ -1,295 +1,197 @@
-import os
-import pandas as pd
-from torchvision.io import read_image
-import torch
-from torch.utils.data import Dataset
-from torchvision import datasets
-from torchvision.transforms import ToTensor
-import matplotlib.pyplot as plt
-import pickle
-import numpy as np
-from PIL import Image
+"""Dataset loader for SKA-DPO preference pairs."""
+
+from __future__ import annotations
+
 import json
-import io
-import lmdb
-# 正常使用
-from skdream.utils.camera import get_camera,create_camera_to_world_matrix
-# for debug
-# from utils.camera import get_camera,create_camera_to_world_matrix
+import pickle
+from pathlib import Path
+from typing import Any, Callable
+
+import numpy as np
+import torch
+from PIL import Image
+from torch.utils.data import Dataset
+
+from skdream.utils.camera import create_camera_to_world_matrix
+
 
 class SKDreamDatasetDPO(Dataset):
-    def __init__(self, root_dir, tokenizer,p_simple_prompts=0,cond_channels=4,
-                 transform=None,cond_transform=None,cvt_cam=True,use_lmdb=False,use_filtered_data=False):
-        # use_lmdb=False use_filtered_data=False
-        self.use_lmdb = use_lmdb  # 待修改 用不到
-        if use_lmdb:
-            self.lmdb_dir = [os.path.join(root_dir,'objsk_db0'),os.path.join(root_dir,'objsk_db1')]
-        # 待定
-        if use_filtered_data:  # 待修改 用不到
-            self.file_ids = json.load(open(root_dir+'/train_eval.json'))['filtered_train']
-        else:
-            self.file_ids = json.load(open(root_dir+'/train_eval.json'))['train']
-        
-        use_gemini_cap = False  # 待修改 用不到
-        if use_gemini_cap:
-            gemini_cap_dict = json.load(open(root_dir+'/gemini_view0.json'))
-            print(len(gemini_cap_dict.keys()))
-            captions = []
-            simple_captions = []
-            for id in self.file_ids:
-                value = gemini_cap_dict[str(id)+'_0']
-                if isinstance(value,list):
-                    cap = value[0]+','+value[1]
-                    cap_simple = value[0]
-                elif isinstance(value,str):
-                    cap = value[2:-1].replace('\'','')
-                    cap_simple = cap.split(',')[0]
-                else:
-                    print(id)
-                    raise ValueError
-                captions.append(cap+', 3d assets')
-                simple_captions.append(cap_simple)
-        else:
-            caption_dict = json.load(open(root_dir+'/dpo_texturig_captions.json'))
-            captions = [caption_dict[k] for k in self.file_ids]
-            simple_captions = captions
-        self.captions = captions
-        self.simple_captions = simple_captions
-        print(self.captions[:3],self.simple_captions[:3])
+    """Load paired winner/loser multi-view images and skeleton conditions.
 
-        self.lose_img_dir = os.path.join(root_dir, 'lose_mv')
-        self.win_img_dir = os.path.join(root_dir, 'win_mv')
+    Expected directory layout is documented in ``docs/DATA_FORMAT.md``.
+    """
 
-        self.cond_dir = os.path.join(root_dir, 'skeleton_d')
-        self.meta_dir = os.path.join(root_dir, 'meta')
-
+    def __init__(
+        self,
+        root_dir: str | Path,
+        tokenizer: Any,
+        cond_channels: int = 4,
+        transform: Callable | None = None,
+        cond_transform: Callable | None = None,
+        num_views: int = 4,
+        split: str = "train",
+    ) -> None:
+        self.root_dir = Path(root_dir).expanduser()
+        self.num_views = num_views
+        self.cond_channels = cond_channels
         self.transform = transform
         self.cond_transform = cond_transform
-        self.p_simple_caption = p_simple_prompts
-        print('tokenzing captions, this may take a while...')
-        tokenized = self.tokenize_captions(tokenizer,self.captions) # 因为是dpo,不需要加""
-        tokenized_simple = self.tokenize_captions(tokenizer,self.simple_captions)
-        self.input_ids = tokenized
-        self.empty_id = None
-        self.simple_ids = tokenized_simple
-        self.azimuth_indices = None  # 不一定用得上
-        self.cond_channels = cond_channels
-        self.cvt_cam = cvt_cam
-    
-    def __len__(self):
+
+        if cond_channels not in {1, 3, 4, 5}:
+            raise ValueError("cond_channels must be one of 1, 3, 4, or 5")
+        if num_views < 1:
+            raise ValueError("num_views must be positive")
+
+        split_path = self.root_dir / "train_eval.json"
+        caption_path = self.root_dir / "dpo_texturig_captions.json"
+        try:
+            with split_path.open(encoding="utf-8") as handle:
+                splits = json.load(handle)
+            with caption_path.open(encoding="utf-8") as handle:
+                captions = json.load(handle)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(
+                f"Missing DPO metadata under {self.root_dir}. "
+                "Run tools/validate_dpo_dataset.py for a complete check."
+            ) from exc
+
+        if split not in splits:
+            raise KeyError(f"Split {split!r} is not present in {split_path}")
+
+        self.file_ids = [str(item_id) for item_id in splits[split]]
+        missing_captions = [item_id for item_id in self.file_ids if item_id not in captions]
+        if missing_captions:
+            preview = ", ".join(missing_captions[:5])
+            raise ValueError(f"Missing captions for {len(missing_captions)} IDs: {preview}")
+
+        self.captions = [captions[item_id] for item_id in self.file_ids]
+        self.input_ids = self.tokenize_captions(tokenizer, self.captions)
+
+        self.winner_dir = self.root_dir / "win_mv"
+        self.loser_dir = self.root_dir / "lose_mv"
+        self.condition_dir = self.root_dir / "skeleton_d"
+        self.meta_dir = self.root_dir / "meta"
+
+    def __len__(self) -> int:
         return len(self.file_ids)
-    
-    def set_azimuth_indices(self,indices):
-        self.azimuth_indices = indices
-  
-    def __getitem__(self, idx):
-        file_id = self.file_ids[idx]
-        input_id = self.input_ids[idx] if np.random.rand()>self.p_simple_caption else self.simple_ids[idx]  # p_simple is always 0
-        # 读相机
-        meta_info = pickle.load(open(os.path.join(self.meta_dir, str(file_id), 'cam_dict.pkl'), 'rb'))
 
-
-        # 读lose win 数据
-        lose_img_files = [os.path.join(self.lose_img_dir, str(file_id), f"gen_{x}.png") for x in range(4)]
-        win_img_files = [os.path.join(self.win_img_dir, str(file_id), f"gen_{x}.png") for x in range(4)]
-
-        cond_files = [os.path.join(self.cond_dir, str(file_id), f"cond_{x}.png") for x in range(4)] 
-
-        lose_img_4 = [Image.open(file) for file in lose_img_files]
-        win_img_4 = [Image.open(file) for file in win_img_files]
-        cond_4 = [Image.open(file) for file in cond_files]
-        def set_bkg(image, value=(128, 128, 128, 0)):
-            data = np.array(image)
-
-            new_background = np.array(value)
-
-            mask = data[:, :, 3] == 0
-            data[mask] = new_background
-            new_image = Image.fromarray(data)
-            return new_image
-        
-        lose_img_4 = [set_bkg(img).convert('RGB') for img in lose_img_4]
-        win_img_4 = [set_bkg(img).convert('RGB') for img in win_img_4]
-        # 可以在这个地方debug一次
-        for i in range(4):
-            lose_img_4[i].save(f'/home/zrs/test_vis/lose_rgb{i}.png')
-            win_img_4[i].save(f'/home/zrs/test_vis/win_rgb{i}.png')
-            cond_4[i].save(f'/home/zrs/test_vis/rgb_cond{i}.png')
-        # exit()
-        def rgb2binary(image,return_array=False):
-            gray_array = np.array(image.convert('RGB').convert('L'))
-            threshold = 1  # 任何非黑色的像素值都会大于 0
-            binary_array = np.where(gray_array > threshold, 1, 0).astype(np.uint8)
-            if return_array:
-                return np.expand_dims(binary_array,axis=-1) * 255
-            new_image = Image.fromarray(binary_array * 255)
-            return new_image
-        
-        if self.cond_channels == 4:
-            pass
-        elif self.cond_channels == 3:
-            cond_4 = [cond.convert('RGB') for cond in cond_4]
-        elif self.cond_channels == 1:
-            # cond_4[0].save('cond_rgb.png')
-            cond_4 = [rgb2binary(cond) for cond in cond_4]
-            # cond_4[0].save('cond_grey.png')
-        elif self.cond_channels == 5:
-            # rgba + binary, directly return array
-            cond_binary = [rgb2binary(cond,return_array=True) for cond in cond_4]
-            cond_4 = [np.concatenate([c1,c2],axis=-1).astype(np.uint8) for c1,c2 in zip(cond_4,cond_binary)]
-        
-        # if self.transform:
-        #     for i in range(len(img_4)):
-        #         img_4[i] = self.transform(img_4[i])
-        # if self.cond_transform:
-        #     for i in range(len(cond_4)):
-        #         cond_4[i] = self.transform(cond_4[i])
-        # image = torch.stack(img_4,dim=0) # (4,3,256,256)
-        # condition = torch.stack(cond_4,dim=0) # (4,4,256,256)
-
-        if self.transform:
-            for i in range(len(lose_img_4)):
-                lose_img_4[i] = self.transform(lose_img_4[i])
-            for i in range(len(win_img_4)):
-                win_img_4[i] = self.transform(win_img_4[i])
-        if self.cond_transform:
-            for i in range(len(cond_4)):
-                cond_4[i] = self.transform(cond_4[i])
-        lose_image = torch.stack(lose_img_4, dim=0) # (4, 3, 256, 256)
-        win_image = torch.stack(win_img_4, dim=0)
-        condition = torch.stack(cond_4, dim=0)
-
-        # Image.fromarray(((condition[0,0].numpy()/2+0.5)*255).astype(np.uint8)).save('cond_tensor.png')
-
-        if self.cvt_cam:
-            cam_4 = []
-            # for az_i in azimuth_indices:
-            #     elevation = meta_info['cam'+str(elevation_idx)][az_i]['elevation']
-            #     azimuth = meta_info['cam'+str(elevation_idx)][az_i]['azimuth']
-            #     cam = create_camera_to_world_matrix(elevation,azimuth,1) # distance is set as 1
-            #     cam_4.append(torch.tensor(cam))
-            for i in range(4):
-                elevation = meta_info['elevation'][i]
-                azimuth = meta_info['azimuth'][i]
-                cam = create_camera_to_world_matrix(elevation,azimuth,1) # distance=1 as mvdream
-                cam_4.append(torch.tensor(cam))
-        else:
-            cam_4 = [torch.tensor(meta_info['cam'+str(elevation_idx)][x]['mv']) for x in azimuth_indices]
-        camera = torch.stack(cam_4,dim=0) # (4,4,4)
-
-        data_dict = {}
-        # data_dict["pixel_values"] = image
-        data_dict["lose_image"] = lose_image
-        data_dict["win_image"] = win_image
-
-        data_dict["conditioning_pixel_values"] = condition
-        data_dict["cameras"] = camera
-        data_dict["input_ids"] = input_id
-        data_dict["captions"] = self.captions[idx]
-        data_dict["file_ids"] = file_id
-        return data_dict
     @staticmethod
-    def tokenize_captions(tokenizer,captions):
-        inputs = tokenizer(
-            text=captions, max_length=tokenizer.model_max_length, padding="max_length", truncation=True, return_tensors="pt"
-        )
-        
-        return inputs.input_ids
+    def _open_image(path: Path) -> Image.Image:
+        try:
+            with Image.open(path) as image:
+                return image.copy()
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"Missing dataset image: {path}") from exc
 
-import torch
-def collate_fn(examples):
+    @staticmethod
+    def _rgb_on_gray(image: Image.Image) -> Image.Image:
+        rgba = image.convert("RGBA")
+        background = Image.new("RGBA", rgba.size, (128, 128, 128, 255))
+        return Image.alpha_composite(background, rgba).convert("RGB")
 
-    # 原本
-    # pixel_values = torch.stack([example["pixel_values"] for example in examples])
-    # pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-    # import pdb; pdb.set_trace()
-    
-    print(examples[0]["lose_image"].shape)
-    print(type(examples[0]["lose_image"]))
-    # DPO
-    lose_values = torch.stack([example["lose_image"] for example in examples])
-    lose_values = lose_values.to(memory_format=torch.contiguous_format).float()
+    @staticmethod
+    def _binary_condition(image: Image.Image) -> Image.Image:
+        gray = np.asarray(image.convert("L"))
+        return Image.fromarray(np.where(gray > 1, 255, 0).astype(np.uint8), mode="L")
 
-    win_values = torch.stack([example["win_image"] for example in examples])
-    win_values = win_values.to(memory_format=torch.contiguous_format).float()
+    def _convert_condition(self, image: Image.Image) -> Image.Image | np.ndarray:
+        if self.cond_channels == 4:
+            return image.convert("RGBA")
+        if self.cond_channels == 3:
+            return image.convert("RGB")
 
-    conditioning_pixel_values = torch.stack([example["conditioning_pixel_values"] for example in examples])
-    conditioning_pixel_values = conditioning_pixel_values.to(memory_format=torch.contiguous_format).float()
-    
-    cameras = torch.stack([example["cameras"] for example in examples])
-    cameras = cameras.to(memory_format=torch.contiguous_format).float()
+        binary = self._binary_condition(image)
+        if self.cond_channels == 1:
+            return binary
 
-    input_ids = torch.stack([example["input_ids"] for example in examples])
-    captions = [example["captions"] for example in examples]
-    file_ids = [example["file_ids"] for example in examples]
+        rgba = np.asarray(image.convert("RGBA"))
+        mask = np.asarray(binary)[..., None]
+        return np.concatenate([rgba, mask], axis=-1)
+
+    def __getitem__(self, index: int) -> dict[str, Any]:
+        item_id = self.file_ids[index]
+        view_ids = range(self.num_views)
+
+        winners = [
+            self._rgb_on_gray(self._open_image(self.winner_dir / item_id / f"gen_{view}.png"))
+            for view in view_ids
+        ]
+        losers = [
+            self._rgb_on_gray(self._open_image(self.loser_dir / item_id / f"gen_{view}.png"))
+            for view in view_ids
+        ]
+        conditions = [
+            self._convert_condition(
+                self._open_image(self.condition_dir / item_id / f"cond_{view}.png")
+            )
+            for view in view_ids
+        ]
+
+        if self.transform is not None:
+            winners = [self.transform(image) for image in winners]
+            losers = [self.transform(image) for image in losers]
+        if self.cond_transform is not None:
+            conditions = [self.cond_transform(image) for image in conditions]
+
+        meta_path = self.meta_dir / item_id / "cam_dict.pkl"
+        try:
+            with meta_path.open("rb") as handle:
+                camera_meta = pickle.load(handle)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"Missing camera metadata: {meta_path}") from exc
+
+        if len(camera_meta.get("elevation", [])) < self.num_views or len(
+            camera_meta.get("azimuth", [])
+        ) < self.num_views:
+            raise ValueError(f"Camera metadata has fewer than {self.num_views} views: {meta_path}")
+
+        cameras = [
+            torch.as_tensor(
+                create_camera_to_world_matrix(
+                    camera_meta["elevation"][view], camera_meta["azimuth"][view], 1
+                )
+            )
+            for view in view_ids
+        ]
+
+        return {
+            "win_image": torch.stack(winners),
+            "lose_image": torch.stack(losers),
+            "conditioning_pixel_values": torch.stack(conditions),
+            "cameras": torch.stack(cameras),
+            "input_ids": self.input_ids[index],
+            "caption": self.captions[index],
+            "file_id": item_id,
+        }
+
+    @staticmethod
+    def tokenize_captions(tokenizer: Any, captions: list[str]) -> torch.Tensor:
+        return tokenizer(
+            text=captions,
+            max_length=tokenizer.model_max_length,
+            padding="max_length",
+            truncation=True,
+            return_tensors="pt",
+        ).input_ids
+
+
+def collate_fn(examples: list[dict[str, Any]]) -> dict[str, Any]:
+    """Collate paired samples without emitting per-batch debug output."""
 
     return {
-        # "pixel_values": pixel_values, # 原本
-        "lose_values": lose_values,
-        "win_values": win_values,
-        "conditioning_pixel_values": conditioning_pixel_values,
-        "cameras": cameras,
-        "input_ids": input_ids,
-        "captions": captions,
-        "file_ids": file_ids,
-    }
-    
-if __name__ == "__main__":
-    from transformers import AutoTokenizer, PretrainedConfig
-    from torchvision import transforms
-
-    
-    tokenizer = AutoTokenizer.from_pretrained(
-            '/data03/xyy/diffusion/mvdream_ckpt/mvdream-sd21-diffusers-lzq',
-            subfolder="tokenizer",
-            revision=None,
-            use_fast=False,
+        "win_values": torch.stack([item["win_image"] for item in examples])
+        .contiguous()
+        .float(),
+        "lose_values": torch.stack([item["lose_image"] for item in examples])
+        .contiguous()
+        .float(),
+        "conditioning_pixel_values": torch.stack(
+            [item["conditioning_pixel_values"] for item in examples]
         )
-
-    image_transforms = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize(256, interpolation=transforms.InterpolationMode.BILINEAR),
-            # transforms.CenterCrop(args.resolution),
-            transforms.Lambda(lambda x:x*2-1), #(0,1)->(-1,1)
-            # transforms.Normalize([0.5], [0.5]),
-        ]
-    )
-
-    conditioning_image_transforms = transforms.Compose(
-        [
-            transforms.ToTensor(),
-            transforms.Resize(256, interpolation=transforms.InterpolationMode.NEAREST),
-            # transforms.CenterCrop(args.resolution),
-            transforms.Lambda(lambda x:x*2-1), #(0,1)->(-1,1)
-        ]
-    )
-
-    dataset = SKDreamDatasetDPO(
-        root_dir = '/home/zrs/mix_data/dpo_dataset',
-        p_simple_prompts=0,
-        cond_channels=4,
-        tokenizer=tokenizer,
-        transform=image_transforms,
-        cond_transform=conditioning_image_transforms,
-        use_lmdb=False,
-        use_filtered_data=False
-    )
-
-    train_dataloader = torch.utils.data.DataLoader(
-        dataset,
-        shuffle=True,
-        collate_fn=collate_fn,
-        batch_size=3,
-        num_workers=1,
-        pin_memory=True,
-        persistent_workers=True,
-    )
-
-    for step, batch in enumerate(train_dataloader):
-        print(batch['lose_values'])
-        print(batch['lose_values'].shape)
-        # import pdb; pdb.set_trace()
-
-    print(dataset[0])
-    # import pdb; pdb.set_trace()
+        .contiguous()
+        .float(),
+        "cameras": torch.stack([item["cameras"] for item in examples]).contiguous().float(),
+        "input_ids": torch.stack([item["input_ids"] for item in examples]),
+        "captions": [item["caption"] for item in examples],
+        "file_ids": [item["file_id"] for item in examples],
+    }

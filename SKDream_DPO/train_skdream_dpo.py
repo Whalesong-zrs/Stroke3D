@@ -13,17 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 import argparse
-import contextlib
-import gc
 import logging
 import math
 import os
-import random
 import shutil
 from pathlib import Path
 
 import accelerate
-import numpy as np
 import torch
 import torch.nn.functional as F
 import torch.utils.checkpoint
@@ -32,162 +28,32 @@ import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
 from accelerate.utils import ProjectConfiguration, set_seed
-from huggingface_hub import create_repo, upload_folder
 from packaging import version
-from PIL import Image
 from torchvision import transforms
 from tqdm.auto import tqdm
-from transformers import AutoTokenizer, PretrainedConfig
+from transformers import AutoTokenizer
 
 import diffusers
-from diffusers import (
-    AutoencoderKL,
-    DDPMScheduler,
-    UniPCMultistepScheduler,
-)
+from diffusers import DDPMScheduler
 from diffusers.optimization import get_scheduler
-from diffusers.utils import check_min_version, is_wandb_available
 from diffusers.utils.import_utils import is_xformers_available
 from diffusers.utils.torch_utils import is_compiled_module
 
+from skdream.dataset_dpo import SKDreamDatasetDPO, collate_fn
+from skdream.pipeline_skdream import (
+    CrossViewAttnProcessor,
+    SKDreamPipeline,
+    XFormersCrossViewAttnProcessor,
+    set_self_attn_processor,
+)
 from skdream.skdream import MultiViewControlNetModel
-from skdream.pipeline_skdream import SKDreamPipeline,set_self_attn_processor,CrossViewAttnProcessor,XFormersCrossViewAttnProcessor
-from skdream.dataset_dpo import SKDreamDatasetDPO
-
-if is_wandb_available():
-    import wandb
-
-# Will error if the minimal version of diffusers is not installed. Remove at your own risks.
-# check_min_version("0.28.0.dev0")
 
 logger = get_logger(__name__)
 
 
-def image_grid(imgs, rows, cols):
-    assert len(imgs) == rows * cols
-
-    w, h = imgs[0].size
-    grid = Image.new("RGB", size=(cols * w, rows * h))
-
-    for i, img in enumerate(imgs):
-        grid.paste(img, box=(i % cols * w, i // cols * h))
-    return grid
-
-
-def log_validation(
-    vae, text_encoder, tokenizer, unet, controlnet, args, accelerator, weight_dtype, step, is_final_validation=False
-):
-    logger.info("Running validation... ")
-
-    if not is_final_validation:
-        controlnet = accelerator.unwrap_model(controlnet)
-    else:
-        controlnet = MultiViewControlNetModel.from_pretrained(args.output_dir, torch_dtype=weight_dtype)
-
-    pipeline = SKDreamPipeline.from_pretrained(
-        args.pretrained_model_name_or_path,
-        vae=vae,
-        text_encoder=text_encoder,
-        tokenizer=tokenizer,
-        unet=unet,
-        controlnet=controlnet,
-        safety_checker=None,
-        revision=args.revision,
-        variant=args.variant,
-        torch_dtype=weight_dtype,
-    )
-    pipeline.scheduler = UniPCMultistepScheduler.from_config(pipeline.scheduler.config)
-    pipeline = pipeline.to(accelerator.device)
-    pipeline.set_progress_bar_config(disable=True)
-
-    if args.enable_xformers_memory_efficient_attention:
-        pipeline.enable_xformers_memory_efficient_attention()
-
-    if args.seed is None:
-        generator = None
-    else:
-        generator = torch.Generator(device=accelerator.device).manual_seed(args.seed)
-
-    if len(args.validation_image) == len(args.validation_prompt):
-        validation_images = args.validation_image
-        validation_prompts = args.validation_prompt
-    elif len(args.validation_image) == 1:
-        validation_images = args.validation_image * len(args.validation_prompt)
-        validation_prompts = args.validation_prompt
-    elif len(args.validation_prompt) == 1:
-        validation_images = args.validation_image
-        validation_prompts = args.validation_prompt * len(args.validation_image)
-    else:
-        raise ValueError(
-            "number of `args.validation_image` and `args.validation_prompt` should be checked in `parse_args`"
-        )
-
-    image_logs = []
-    inference_ctx = contextlib.nullcontext() if is_final_validation else torch.autocast("cuda")
-
-    for validation_prompt, validation_image in zip(validation_prompts, validation_images):
-        validation_image = Image.open(validation_image).convert("RGB")
-
-        images = []
-
-        for _ in range(args.num_validation_images):
-            with inference_ctx:
-                image = pipeline(
-                    validation_prompt, validation_image, num_inference_steps=20, generator=generator
-                ).images[0]
-
-            images.append(image)
-
-        image_logs.append(
-            {"validation_image": validation_image, "images": images, "validation_prompt": validation_prompt}
-        )
-
-    tracker_key = "test" if is_final_validation else "validation"
-    for tracker in accelerator.trackers:
-        if tracker.name == "tensorboard":
-            for log in image_logs:
-                images = log["images"]
-                validation_prompt = log["validation_prompt"]
-                validation_image = log["validation_image"]
-
-                formatted_images = []
-
-                formatted_images.append(np.asarray(validation_image))
-
-                for image in images:
-                    formatted_images.append(np.asarray(image))
-
-                formatted_images = np.stack(formatted_images)
-
-                tracker.writer.add_images(validation_prompt, formatted_images, step, dataformats="NHWC")
-        elif tracker.name == "wandb":
-            formatted_images = []
-
-            for log in image_logs:
-                images = log["images"]
-                validation_prompt = log["validation_prompt"]
-                validation_image = log["validation_image"]
-
-                formatted_images.append(wandb.Image(validation_image, caption="Controlnet conditioning"))
-
-                for image in images:
-                    image = wandb.Image(image, caption=validation_prompt)
-                    formatted_images.append(image)
-
-            tracker.log({tracker_key: formatted_images})
-        else:
-            logger.warning(f"image logging not implemented for {tracker.name}")
-
-        del pipeline
-        gc.collect()
-        torch.cuda.empty_cache()
-
-        return image_logs
-
-
 
 def parse_args(input_args=None):
-    parser = argparse.ArgumentParser(description="Simple example of a ControlNet training script.")
+    parser = argparse.ArgumentParser(description="Fine-tune SKDream with SKA-DPO preference pairs.")
     parser.add_argument(
         "--pretrained_model_name_or_path",
         type=str,
@@ -198,9 +64,8 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--controlnet_model_name_or_path",
         type=str,
-        default=None,
-        help="Path to pretrained controlnet model or model identifier from huggingface.co/models."
-        " If not specified controlnet weights are initialized from unet.",
+        required=True,
+        help="Path or Hub ID for the SFT SKDream controlnet used as policy and reference.",
     )
     parser.add_argument(
         "--revision",
@@ -208,12 +73,6 @@ def parse_args(input_args=None):
         default=None,
         required=False,
         help="Revision of pretrained model identifier from huggingface.co/models.",
-    )
-    parser.add_argument(
-        "--variant",
-        type=str,
-        default=None,
-        help="Variant of the model files of the pretrained model identifier from huggingface.co/models, 'e.g.' fp16",
     )
     parser.add_argument(
         "--tokenizer_name",
@@ -227,21 +86,12 @@ def parse_args(input_args=None):
         default="controlnet-model",
         help="The output directory where the model predictions and checkpoints will be written.",
     )
-    parser.add_argument(
-        "--cache_dir",
-        type=str,
-        default=None,
-        help="The directory where the downloaded models and datasets will be stored.",
-    )
-    parser.add_argument("--seed", type=int, default=None, help="A seed for reproducible training.")
+    parser.add_argument("--seed", type=int, default=0, help="Seed for reproducible training.")
     parser.add_argument(
         "--resolution",
         type=int,
-        default=512,
-        help=(
-            "The resolution for input images, all the images in the train/validation dataset will be resized to this"
-            " resolution"
-        ),
+        default=256,
+        help="Resolution used for winner, loser, and conditioning images.",
     )
     parser.add_argument(
         "--train_batch_size", type=int, default=4, help="Batch size (per device) for the training dataloader."
@@ -250,26 +100,20 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--max_train_steps",
         type=int,
-        default=None,
-        help="Total number of training steps to perform.  If provided, overrides num_train_epochs.",
+        default=1000,
+        help="Total number of training steps. The paper setting is 1,000.",
     )
     parser.add_argument(
         "--checkpointing_steps",
         type=int,
         default=500,
-        help=(
-            "Save a checkpoint of the training state every X updates. Checkpoints can be used for resuming training via `--resume_from_checkpoint`. "
-            "In the case that the checkpoint is better than the final trained model, the checkpoint can also be used for inference."
-            "Using a checkpoint for inference requires separate loading of the original pipeline and the individual checkpointed model components."
-            "See https://huggingface.co/docs/diffusers/main/en/training/dreambooth#performing-inference-using-a-saved-checkpoint for step by step"
-            "instructions."
-        ),
+        help="Save a resumable training checkpoint every N optimizer updates.",
     )
     parser.add_argument(
         "--checkpoints_total_limit",
         type=int,
-        default=None,
-        help=("Max number of checkpoints to store."),
+        default=2,
+        help="Maximum number of resumable checkpoints to retain.",
     )
     parser.add_argument(
         "--resume_from_checkpoint",
@@ -313,7 +157,7 @@ def parse_args(input_args=None):
         ),
     )
     parser.add_argument(
-        "--lr_warmup_steps", type=int, default=500, help="Number of steps for the warmup in the lr scheduler."
+        "--lr_warmup_steps", type=int, default=100, help="Number of warmup steps."
     )
     parser.add_argument(
         "--lr_num_cycles",
@@ -321,9 +165,9 @@ def parse_args(input_args=None):
         default=1,
         help="Number of hard resets of the lr in cosine_with_restarts scheduler.",
     )
-    parser.add_argument("--lr_power", type=float, default=1.0, help="Power factor of the polynomial scheduler.")
-    parser.add_argument("--cond_module", type=str, default='conv', help="Type of condition feature extractor.")
-    parser.add_argument("--use_lmdb", action="store_true", help="Whether to use LMDB.")
+    parser.add_argument(
+        "--lr_power", type=float, default=1.0, help="Power factor of the polynomial scheduler."
+    )
     parser.add_argument(
         "--use_8bit_adam", action="store_true", help="Whether or not to use 8-bit Adam from bitsandbytes."
     )
@@ -335,19 +179,11 @@ def parse_args(input_args=None):
             "Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process."
         ),
     )
-    parser.add_argument("--adam_beta1", type=float, default=0.9, help="The beta1 parameter for the Adam optimizer.")
-    parser.add_argument("--adam_beta2", type=float, default=0.999, help="The beta2 parameter for the Adam optimizer.")
-    parser.add_argument("--adam_weight_decay", type=float, default=1e-2, help="Weight decay to use.")
+    parser.add_argument("--adam_beta1", type=float, default=0.9, help="AdamW beta1.")
+    parser.add_argument("--adam_beta2", type=float, default=0.999, help="AdamW beta2.")
+    parser.add_argument("--adam_weight_decay", type=float, default=1e-2, help="AdamW weight decay.")
     parser.add_argument("--adam_epsilon", type=float, default=1e-08, help="Epsilon value for the Adam optimizer")
     parser.add_argument("--max_grad_norm", default=1.0, type=float, help="Max gradient norm.")
-    parser.add_argument("--push_to_hub", action="store_true", help="Whether or not to push the model to the Hub.")
-    parser.add_argument("--hub_token", type=str, default=None, help="The token to use to push to the Model Hub.")
-    parser.add_argument(
-        "--hub_model_id",
-        type=str,
-        default=None,
-        help="The name of the repository to keep in sync with the local `output_dir`.",
-    )
     parser.add_argument(
         "--logging_dir",
         type=str,
@@ -389,9 +225,6 @@ def parse_args(input_args=None):
         "--enable_xformers_memory_efficient_attention", action="store_true", help="Whether or not to use xformers."
     )
     parser.add_argument(
-        "--use_filtered_data", action="store_true", help="Whether or not to use filtered data."
-    )
-    parser.add_argument(
         "--set_grads_to_none",
         action="store_true",
         help=(
@@ -401,159 +234,51 @@ def parse_args(input_args=None):
         ),
     )
     parser.add_argument(
-        "--max_train_samples",
-        type=int,
-        default=None,
-        help=(
-            "For debugging purposes or quicker training, truncate the number of training examples to this "
-            "value if set."
-        ),
-    )
-    parser.add_argument(
-        "--proportion_empty_prompts",
-        type=float,
-        default=0,
-        help="Proportion of image prompts to be replaced with empty strings. Defaults to 0 (no prompt replacement).",
-    )
-    parser.add_argument(
         "--data_root_dir",
         type=str,
-        default=None,
+        required=True,
+        help="Root of the SKA-DPO preference dataset.",
     )
     parser.add_argument(
-        "--validation_prompt",
-        type=str,
-        default=None,
-        nargs="+",
-        help=(
-            "A set of prompts evaluated every `--validation_steps` and logged to `--report_to`."
-            " Provide either a matching number of `--validation_image`s, a single `--validation_image`"
-            " to be used with all prompts, or a single prompt that will be used with all `--validation_image`s."
-        ),
-    )
-    parser.add_argument(
-        "--validation_image",
-        type=str,
-        default=None,
-        nargs="+",
-        help=(
-            "A set of paths to the controlnet conditioning image be evaluated every `--validation_steps`"
-            " and logged to `--report_to`. Provide either a matching number of `--validation_prompt`s, a"
-            " a single `--validation_prompt` to be used with all `--validation_image`s, or a single"
-            " `--validation_image` that will be used with all `--validation_prompt`s."
-        ),
-    )
-    parser.add_argument(
-        "--num_validation_images",
+        "--num_views",
         type=int,
         default=4,
-        help="Number of images to be generated for each `--validation_image`, `--validation_prompt` pair",
-    )
-    parser.add_argument(
-        "--validation_steps",
-        type=int,
-        default=100,
-        help=(
-            "Run validation every X steps. Validation consists of running the prompt"
-            " `args.validation_prompt` multiple times: `args.num_validation_images`"
-            " and logging the images."
-        ),
+        help="Number of jointly trained orthogonal views.",
     )
     parser.add_argument(
         "--tracker_project_name",
         type=str,
-        default="train_controlnet",
-        help=(
-            "The `project_name` argument passed to Accelerator.init_trackers for"
-            " more information see https://huggingface.co/docs/accelerate/v0.17.0/en/package_reference/accelerator#accelerate.Accelerator"
-        ),
+        default="skdream",
+        help="Project name passed to Accelerate experiment trackers.",
     )
-    parser.add_argument("--cond_channels",type=int,default=4)
+    parser.add_argument("--cond_channels", type=int, default=4)
 
-    #DPO
-    parser.add_argument("--beta_dpo", type=float, default=5000, help="The beta DPO temperature controlling strength of KL penalty")
+    parser.add_argument(
+        "--beta_dpo",
+        type=float,
+        default=5000,
+        help="DPO inverse temperature used by the diffusion preference objective.",
+    )
 
     if input_args is not None:
         args = parser.parse_args(input_args)
     else:
         args = parser.parse_args()
 
-    if args.proportion_empty_prompts < 0 or args.proportion_empty_prompts > 1:
-        raise ValueError("`--proportion_empty_prompts` must be in the range [0, 1].")
-
-    if args.validation_prompt is not None and args.validation_image is None:
-        raise ValueError("`--validation_image` must be set if `--validation_prompt` is set")
-
-    if args.validation_prompt is None and args.validation_image is not None:
-        raise ValueError("`--validation_prompt` must be set if `--validation_image` is set")
-
-    if (
-        args.validation_image is not None
-        and args.validation_prompt is not None
-        and len(args.validation_image) != 1
-        and len(args.validation_prompt) != 1
-        and len(args.validation_image) != len(args.validation_prompt)
-    ):
-        raise ValueError(
-            "Must provide either 1 `--validation_image`, 1 `--validation_prompt`,"
-            " or the same number of `--validation_prompt`s and `--validation_image`s"
-        )
-
     if args.resolution % 8 != 0:
         raise ValueError(
             "`--resolution` must be divisible by 8 for consistently sized encoded images between the VAE and the controlnet encoder."
         )
+    if args.num_views < 1:
+        raise ValueError("`--num_views` must be positive.")
+    if args.checkpointing_steps < 1:
+        raise ValueError("`--checkpointing_steps` must be positive.")
+    if args.beta_dpo <= 0:
+        raise ValueError("`--beta_dpo` must be positive.")
 
     return args
 
-
-
-
-def collate_fn(examples):
-
-    # 原本
-    # pixel_values = torch.stack([example["pixel_values"] for example in examples])
-    # pixel_values = pixel_values.to(memory_format=torch.contiguous_format).float()
-    # import pdb; pdb.set_trace()
-    
-    # print(examples[0]["lose_image"].shape)
-    # print(type(examples[0]["lose_image"]))
-    # DPO
-    lose_values = torch.stack([example["lose_image"] for example in examples])
-    lose_values = lose_values.to(memory_format=torch.contiguous_format).float()
-
-    win_values = torch.stack([example["win_image"] for example in examples])
-    win_values = win_values.to(memory_format=torch.contiguous_format).float()
-
-    conditioning_pixel_values = torch.stack([example["conditioning_pixel_values"] for example in examples])
-    conditioning_pixel_values = conditioning_pixel_values.to(memory_format=torch.contiguous_format).float()
-    
-    cameras = torch.stack([example["cameras"] for example in examples])
-    cameras = cameras.to(memory_format=torch.contiguous_format).float()
-
-    input_ids = torch.stack([example["input_ids"] for example in examples])
-    captions = [example["captions"] for example in examples]
-    file_ids = [example["file_ids"] for example in examples]
-
-    return {
-        # "pixel_values": pixel_values, # 原本
-        "lose_values": lose_values,
-        "win_values": win_values,
-        "conditioning_pixel_values": conditioning_pixel_values,
-        "cameras": cameras,
-        "input_ids": input_ids,
-        "captions": captions,
-        "file_ids": file_ids,
-    }
-
-
 def main(args):
-    if args.report_to == "wandb" and args.hub_token is not None:
-        raise ValueError(
-            "You cannot use both --report_to=wandb and --hub_token due to a security risk of exposing your token."
-            " Please use `huggingface-cli login` to authenticate with the Hub."
-        )
-
     logging_dir = Path(args.output_dir, args.logging_dir)
 
     accelerator_project_config = ProjectConfiguration(project_dir=args.output_dir, logging_dir=logging_dir)
@@ -587,15 +312,9 @@ def main(args):
     if args.seed is not None:
         set_seed(args.seed)
 
-    # Handle the repository creation
     if accelerator.is_main_process:
         if args.output_dir is not None:
             os.makedirs(args.output_dir, exist_ok=True)
-
-        if args.push_to_hub:
-            repo_id = create_repo(
-                repo_id=args.hub_model_id or Path(args.output_dir).name, exist_ok=True, token=args.hub_token
-            ).repo_id
 
     # Load the tokenizer
     if args.tokenizer_name:
@@ -618,52 +337,23 @@ def main(args):
     camera_proj = pipe.camera_proj
     cond_channels = args.cond_channels
 
-    # 原来
-    # if args.controlnet_model_name_or_path:
-    #     logger.info("Loading existing controlnet weights")
-    #     controlnet = MultiViewControlNetModel.from_pretrained(args.controlnet_model_name_or_path,low_cpu_mem_usage=False,device_map=None)
-    # else:
-    #     logger.info("Initializing controlnet weights from unet")
-    #     controlnet = MultiViewControlNetModel.from_unet(unet,conditioning_channels=cond_channels,
-    #                                                     conditioning_embedding_model=args.cond_module)
-    
-    # DPO
-    # 1. 加载将被训练的ControlNet (policy model)
-    if args.controlnet_model_name_or_path:
-        logger.info("Loading existing controlnet weights for training")
-        controlnet = MultiViewControlNetModel.from_pretrained(
-            args.controlnet_model_name_or_path, low_cpu_mem_usage=False, device_map=None
-        )
+    logger.info("Loading existing controlnet weights for training")
+    controlnet = MultiViewControlNetModel.from_pretrained(
+        args.controlnet_model_name_or_path, low_cpu_mem_usage=False, device_map=None
+    )
+    logger.info("Loading frozen controlnet weights for the DPO reference")
+    ref_controlnet = MultiViewControlNetModel.from_pretrained(
+        args.controlnet_model_name_or_path, low_cpu_mem_usage=False, device_map=None
+    )
 
-        logger.info("Loading controlnet weights for reference")
-        ref_controlnet = MultiViewControlNetModel.from_pretrained(
-            args.controlnet_model_name_or_path, low_cpu_mem_usage=False, device_map=None
-        )
-    else:
-        raise ValueError("No existing weights for DPO controlnet.")
-
-
-    # ------------------Set cross attention---------------------
     if is_xformers_available():
-        import xformers
         attn_procs_cls = XFormersCrossViewAttnProcessor
     else:
         attn_procs_cls = CrossViewAttnProcessor
-    
-    set_self_attn_processor(
-        unet, attn_procs_cls(num_views=4)
-    )
 
-    set_self_attn_processor(
-        controlnet, attn_procs_cls(num_views=4)
-    )
-
-    # DPO
-    set_self_attn_processor(
-        ref_controlnet, attn_procs_cls(num_views=4)
-    )
-    #----------------------------------------------------------------------
-    
+    set_self_attn_processor(unet, attn_procs_cls(num_views=args.num_views))
+    set_self_attn_processor(controlnet, attn_procs_cls(num_views=args.num_views))
+    set_self_attn_processor(ref_controlnet, attn_procs_cls(num_views=args.num_views))
 
     # Taken from [Sayak Paul's Diffusers PR #6511](https://github.com/huggingface/diffusers/pull/6511/files)
     def unwrap_model(model):
@@ -682,7 +372,7 @@ def main(args):
                     weights.pop()
                     model = models[i]
 
-                    sub_dir = args.tracker_project_name
+                    sub_dir = "skdream"
                     model.save_pretrained(os.path.join(output_dir, sub_dir))
 
                     i -= 1
@@ -693,7 +383,9 @@ def main(args):
                 model = models.pop()
 
                 # load diffusers style into model
-                load_model = MultiViewControlNetModel.from_pretrained(input_dir, subfolder=args.tracker_project_name)
+                load_model = MultiViewControlNetModel.from_pretrained(
+                    input_dir, subfolder="skdream"
+                )
                 model.register_to_config(**load_model.config)
 
                 model.load_state_dict(load_model.state_dict())
@@ -706,7 +398,12 @@ def main(args):
     unet.requires_grad_(False)
     text_encoder.requires_grad_(False)
     camera_proj.requires_grad_(False)
-    ref_controlnet.requires_grad_(False)  # DPO
+    vae.eval()
+    unet.eval()
+    text_encoder.eval()
+    camera_proj.eval()
+    ref_controlnet.requires_grad_(False)
+    ref_controlnet.eval()
     controlnet.train()
     
 
@@ -775,9 +472,7 @@ def main(args):
         [
             transforms.ToTensor(),
             transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.BILINEAR),
-            # transforms.CenterCrop(args.resolution),
-            transforms.Lambda(lambda x:x*2-1), #(0,1)->(-1,1)
-            # transforms.Normalize([0.5], [0.5]),
+            transforms.Lambda(lambda image: image * 2 - 1),
         ]
     )
 
@@ -785,13 +480,17 @@ def main(args):
         [
             transforms.ToTensor(),
             transforms.Resize(args.resolution, interpolation=transforms.InterpolationMode.NEAREST),
-            # transforms.CenterCrop(args.resolution),
-            transforms.Lambda(lambda x:x*2-1), #(0,1)->(-1,1)
+            transforms.Lambda(lambda image: image * 2 - 1),
         ]
     )
-    train_dataset = SKDreamDatasetDPO(root_dir=args.data_root_dir,p_simple_prompts=0,cond_channels=cond_channels,
-                                     tokenizer=tokenizer,transform=image_transforms,cond_transform=conditioning_image_transforms,
-                                     use_lmdb=args.use_lmdb, use_filtered_data=args.use_filtered_data)
+    train_dataset = SKDreamDatasetDPO(
+        root_dir=args.data_root_dir,
+        tokenizer=tokenizer,
+        cond_channels=cond_channels,
+        transform=image_transforms,
+        cond_transform=conditioning_image_transforms,
+        num_views=args.num_views,
+    )
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
@@ -800,7 +499,7 @@ def main(args):
         batch_size=args.train_batch_size,
         num_workers=args.dataloader_num_workers,
         pin_memory=True,
-        persistent_workers=True,
+        persistent_workers=args.dataloader_num_workers > 0,
     )
 
     # Scheduler and math around the number of training steps.
@@ -852,9 +551,6 @@ def main(args):
         tracker_config = dict(vars(args))
 
         # tensorboard cannot handle list types for config
-        tracker_config.pop("validation_prompt")
-        tracker_config.pop("validation_image")
-
         accelerator.init_trackers(args.tracker_project_name, config=tracker_config)
         
     # Train!
@@ -871,37 +567,30 @@ def main(args):
     global_step = 0
     first_epoch = 0
 
-    # Potentially load in the weights and states from a previous save
+    initial_global_step = 0
     if args.resume_from_checkpoint:
-        if args.resume_from_checkpoint != "latest":
-            path = os.path.basename(args.resume_from_checkpoint)
-        else:
-            # Get the most recent checkpoint
+        checkpoint_path = None
+        if args.resume_from_checkpoint == "latest":
             dirs = os.listdir(args.output_dir)
             dirs = [d for d in dirs if d.startswith("checkpoint")]
             dirs = sorted(dirs, key=lambda x: int(x.split("-")[1]))
-            path = dirs[-1] if len(dirs) > 0 else None
+            if dirs:
+                checkpoint_path = Path(args.output_dir) / dirs[-1]
+        else:
+            candidate = Path(args.resume_from_checkpoint)
+            checkpoint_path = candidate if candidate.is_dir() else Path(args.output_dir) / candidate
 
-        if path is None:
+        if checkpoint_path is None or not checkpoint_path.is_dir():
             accelerator.print(
                 f"Checkpoint '{args.resume_from_checkpoint}' does not exist. Starting a new training run."
             )
             args.resume_from_checkpoint = None
-            initial_global_step = 0
         else:
-            try:
-                accelerator.print(f"Resuming from checkpoint {path}")
-                accelerator.load_state(os.path.join(args.output_dir, path))
-            except:
-                accelerator.print(f"Resuming from checkpoint {args.resume_from_checkpoint}")
-                accelerator.load_state(args.resume_from_checkpoint)
-            
-            global_step = int(path.split("-")[1])
-
+            accelerator.print(f"Resuming from checkpoint {checkpoint_path}")
+            accelerator.load_state(str(checkpoint_path))
+            global_step = int(checkpoint_path.name.split("-")[1])
             initial_global_step = global_step
             first_epoch = global_step // num_update_steps_per_epoch
-    else:
-        initial_global_step = 0
 
     progress_bar = tqdm(
         range(0, args.max_train_steps),
@@ -911,18 +600,11 @@ def main(args):
         disable=not accelerator.is_local_main_process,
     )
     
-    image_logs = None
     for epoch in range(first_epoch, args.num_train_epochs):
         for step, batch in enumerate(train_dataloader):
             with accelerator.accumulate(controlnet):
-                # Convert images to latent space
-                # 原本
-                # batch_size,num_views = batch["pixel_values"].shape[:2] 
-
-                # DPO
-                # 2*B, N, C, H, W
+                # Concatenate winners and losers so they share noise and timesteps.
                 feed_pixel_values = torch.cat([batch["win_values"], batch["lose_values"]], dim=0)
-                # 这里的batchsize=原本的batchsize*2
                 batch_size, num_views = feed_pixel_values.shape[:2]
                 images = rearrange(feed_pixel_values.to(dtype=weight_dtype), "b n c h w -> (b n) c h w")
 
@@ -930,7 +612,6 @@ def main(args):
                     latents = vae.encode(images).latent_dist.sample()
                     latents = latents * vae.config.scaling_factor
                 
-                # latents_size_3d 形状: (2*B, N, C_latent, H_latent, W_latent)
                 latents_size_3d = latents.shape[-3:]
                 latents = latents.reshape((batch_size, num_views, *latents_size_3d))
 
@@ -938,7 +619,6 @@ def main(args):
                 noise = torch.randn_like(latents.chunk(2)[0])
                 noise = noise.repeat(2, 1, 1, 1, 1)
 
-                # 原始的B
                 timesteps_bs = latents.shape[0] // 2
                 timesteps = torch.randint(0, noise_scheduler.config.num_train_timesteps, (timesteps_bs,), device=latents.device)
                 timesteps = timesteps.long()
@@ -946,9 +626,6 @@ def main(args):
 
                 noisy_latents = noise_scheduler.add_noise(latents, noise, timesteps)
 
-                # 假设原始 batch_size = B, DPO处理后 batch_size = 2*B
-                original_bs = batch["input_ids"].shape[0]
-                # input id是tokenize以后text emb
                 encoder_hidden_states = text_encoder(batch["input_ids"], return_dict=False)[0]
                 encoder_hidden_states = encoder_hidden_states.repeat(2, 1, 1)
 
@@ -996,7 +673,7 @@ def main(args):
                 target = rearrange(noise, 'b n c h w -> (b n) c h w')
 
                 policy_losses = (policy_pred - target).pow(2).mean(dim=[1, 2, 3])
-                policy_losses = rearrange(policy_losses, '(b n) -> b n', n=num_views).mean(dim=1) # 按样本平均多视图损失
+                policy_losses = rearrange(policy_losses, '(b n) -> b n', n=num_views).mean(dim=1)
 
                 ref_losses = (ref_pred - target).pow(2).mean(dim=[1, 2, 3])
                 ref_losses = rearrange(ref_losses, '(b n) -> b n', n=num_views).mean(dim=1)
@@ -1018,27 +695,19 @@ def main(args):
                 lr_scheduler.step()
                 optimizer.zero_grad(set_to_none=args.set_grads_to_none)
                 
-                # Checks if the accelerator has performed an optimization step behind the scenes
-                # 找到您代码中的这个位置，并用下面的代码块完全替换它
-                # Checks if the accelerator has performed an optimization step behind the scenes
                 if accelerator.sync_gradients:
                     progress_bar.update(1)
                     global_step += 1
 
-                    # ====================== 新增的完整日志记录代码 ======================
-                    # 1. 计算用于日志的指标 (这些张量仍然在当前GPU上)
                     implicit_acc = (inside_term > 0).sum().float() / inside_term.size(0)
                     raw_policy_loss = 0.5 * (policy_losses_w.mean() + policy_losses_l.mean())
                     raw_ref_loss = 0.5 * (ref_losses_w.mean() + ref_losses_l.mean())
 
-                    # 2. 聚合所有分布式进程的指标
-                    #    loss 张量已经在所有设备上，但其他指标需要手动聚合
-                    avg_loss = accelerator.gather(loss.repeat(args.train_batch_size)).mean()
-                    avg_implicit_acc = accelerator.gather(implicit_acc.repeat(args.train_batch_size)).mean()
-                    avg_raw_policy_loss = accelerator.gather(raw_policy_loss.repeat(args.train_batch_size)).mean()
-                    avg_raw_ref_loss = accelerator.gather(raw_ref_loss.repeat(args.train_batch_size)).mean()
+                    avg_loss = accelerator.gather(loss.detach().reshape(1)).mean()
+                    avg_implicit_acc = accelerator.gather(implicit_acc.reshape(1)).mean()
+                    avg_raw_policy_loss = accelerator.gather(raw_policy_loss.reshape(1)).mean()
+                    avg_raw_ref_loss = accelerator.gather(raw_ref_loss.reshape(1)).mean()
 
-                    # 3. 将所有指标打包到一个字典中
                     logs = {
                         "dpo_loss": avg_loss.item(),
                         "lr": lr_scheduler.get_last_lr()[0],
@@ -1047,15 +716,12 @@ def main(args):
                         "mse_ref": avg_raw_ref_loss.item()
                     }
 
-                    # 4. 更新进度条并发送到追踪器 (TensorBoard/WandB)
                     progress_bar.set_postfix(**logs)
                     accelerator.log(logs, step=global_step)
                     if accelerator.is_main_process:
                         for tracker in accelerator.trackers:
                             if tracker.name == "tensorboard":
                                 tracker.writer.flush()
-                    # =================================================================
-
                     if accelerator.is_main_process:
                         if global_step % args.checkpointing_steps == 0:
                             # _before_ saving state, check if this save would set us over the `checkpoints_total_limit`
@@ -1082,30 +748,14 @@ def main(args):
                             accelerator.save_state(save_path)
                             logger.info(f"Saved state to {save_path}")
 
-                        if args.validation_prompt is not None and global_step % args.validation_steps == 0:
-                            image_logs = log_validation(
-                                vae,
-                                text_encoder,
-                                tokenizer,
-                                unet,
-                                accelerator.unwrap_model(controlnet), # 确保传递解包后的模型进行验证
-                                args,
-                                accelerator,
-                                weight_dtype,
-                                global_step,
-                            )
-
-                # logs = {"loss": loss.detach().item(), "lr": lr_scheduler.get_last_lr()[0]}
-                # progress_bar.set_postfix(**logs)
-                # accelerator.log(logs, step=global_step)
-
             if global_step >= args.max_train_steps:
                 break
 
-    # Create the pipeline using using the trained modules and save it.
     accelerator.wait_for_everyone()
-
-
+    if accelerator.is_main_process:
+        final_dir = os.path.join(args.output_dir, "skdream")
+        accelerator.unwrap_model(controlnet).save_pretrained(final_dir)
+        logger.info(f"Saved final SKDream weights to {final_dir}")
     accelerator.end_training()
 
 

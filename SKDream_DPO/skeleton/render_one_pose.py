@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import math
 import cv2
-from skeleton.rig_parser import Info
 from collections import OrderedDict
 
 def assign_ccm_to_bones(joints_3d, bones):
@@ -14,7 +13,8 @@ def assign_ccm_to_bones(joints_3d, bones):
     joints_3d = np.array(joints_3d)
     min_coords = joints_3d.min(axis=0)
     max_coords = joints_3d.max(axis=0)
-    normalized_joints = (joints_3d - min_coords) / (max_coords - min_coords)
+    extent = np.maximum(max_coords - min_coords, 1e-8)
+    normalized_joints = (joints_3d - min_coords) / extent
     
     # Compute the midpoints of each bone
     midpoints = [(normalized_joints[bone[0]] + normalized_joints[bone[1]]) / 2 for bone in bones]
@@ -84,14 +84,70 @@ def process_depth(depth_values):
     return depth_values
 
 def get_skeleton_info(sk_dir):
-    rig_info = Info(sk_dir)
-    rig_info.assign_joint_part(rig_info.root)
-    joint_dict = rig_info.get_joint_dict()
-    part_dict = rig_info.get_part_dict()
-    bones_idx = rig_info.get_bones_idx()
-    parts = list(part_dict.values())
-    joints = list(joint_dict.values())
-    return joints,bones_idx,parts
+    """Read the small ``joints/root/hier`` subset of the RigNet text format."""
+
+    joint_positions = OrderedDict()
+    children = OrderedDict()
+    root_name = None
+    hierarchy = []
+    with open(sk_dir, encoding="utf-8") as handle:
+        for line in handle:
+            fields = line.split()
+            if not fields:
+                continue
+            if fields[0] == "joints":
+                joint_positions[fields[1]] = tuple(float(value) for value in fields[2:5])
+                children.setdefault(fields[1], [])
+            elif fields[0] == "root":
+                root_name = fields[1]
+            elif fields[0] == "hier":
+                parent, child = fields[1:3]
+                children.setdefault(parent, []).append(child)
+                children.setdefault(child, [])
+                hierarchy.append((parent, child))
+
+    if root_name is None:
+        raise ValueError(f"Skeleton file has no root entry: {sk_dir}")
+    if root_name not in joint_positions:
+        raise ValueError(f"Skeleton root {root_name!r} has no joint coordinates: {sk_dir}")
+
+    joint_names = []
+    queue = [root_name]
+    while queue:
+        name = queue.pop(0)
+        if name in joint_names:
+            raise ValueError(f"Skeleton hierarchy contains a cycle or duplicate parent: {sk_dir}")
+        if name not in joint_positions:
+            raise ValueError(f"Joint {name!r} has no coordinates: {sk_dir}")
+        joint_names.append(name)
+        queue.extend(children[name])
+
+    unreachable = set(joint_positions) - set(joint_names)
+    if unreachable:
+        raise ValueError(f"Skeleton contains {len(unreachable)} joints unreachable from its root: {sk_dir}")
+
+    index = {name: position for position, name in enumerate(joint_names)}
+    bones_idx = [(index[parent], index[child]) for parent, child in hierarchy]
+
+    part_by_name = {root_name: 0}
+    counter = 0
+
+    def assign_parts(name):
+        nonlocal counter
+        descendants = children[name]
+        if len(descendants) == 1:
+            part_by_name[descendants[0]] = part_by_name[name]
+            assign_parts(descendants[0])
+        elif len(descendants) > 1:
+            for child in descendants:
+                counter += 1
+                part_by_name[child] = counter
+                assign_parts(child)
+
+    assign_parts(root_name)
+    joints = [joint_positions[name] for name in joint_names]
+    parts = [part_by_name[name] for name in joint_names]
+    return joints, bones_idx, parts
 
 def xfm_points(points, matrix):
     '''Transform points.
@@ -125,7 +181,7 @@ def project_joints(joints:torch.Tensor,mvp:torch.Tensor,shift=(0,0,0),scale=1) -
     joints = joints / scale
     # print(joints[None,...].shape,joints[None,...])
     
-    joints_2d = xfm_points(joints.cuda(), mvp.cuda())
+    joints_2d = xfm_points(joints.to(mvp.device), mvp)
     joints_depth = joints_2d[...,3:4].detach().cpu().numpy()
     joints_2d = joints_2d[...,0:2]/joints_2d[...,3:4]/2 + 0.5 #(-1,1)homo -> (0,1)ecu
     joints_2d = joints_2d.detach().cpu().numpy()
@@ -144,4 +200,3 @@ def sort_bones_depth(joint_depth,bones_idx):
     sorted_dict = OrderedDict(sorted(depth_dict.items(),key=lambda x:x[1],reverse=True))
     return list(sorted_dict.keys())
     
-
