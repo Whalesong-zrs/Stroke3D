@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import tarfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import BinaryIO, Iterable
 
@@ -42,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skeletons-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--samples-per-shard", type=int, default=500)
+    parser.add_argument("--workers", type=int, default=1)
     parser.add_argument(
         "--overwrite", action="store_true", help="Replace existing shard files."
     )
@@ -75,6 +77,35 @@ def chunks(items: list[str], size: int) -> Iterable[list[str]]:
         yield items[start : start + size]
 
 
+def inspect_sample(
+    task: tuple[str, str, Path, Path]
+) -> tuple[dict[str, object] | None, str | None]:
+    sample_id, caption, assets_dir, skeletons_dir = task
+    asset = assets_dir / f"{sample_id}_mesh.glb"
+    skeleton = skeletons_dir / f"{sample_id}.txt"
+    if not asset.is_file() or not skeleton.is_file():
+        return None, sample_id
+    return (
+        {
+            "id": sample_id,
+            "caption": caption,
+            "asset": f"assets/{sample_id}_mesh.glb",
+            "asset_bytes": asset.stat().st_size,
+            "skeleton": f"skeletons/{sample_id}.txt",
+            "skeleton_bytes": skeleton.stat().st_size,
+        },
+        None,
+    )
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(8 * 1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def build_shard(
     output_path: Path,
     sample_ids: list[str],
@@ -102,31 +133,42 @@ def build_shard(
     return checksum, output_path.stat().st_size
 
 
+def build_shard_task(
+    task: tuple[int, int, Path, list[str], Path, Path, bool]
+) -> tuple[int, str, str, int]:
+    index, shard_count, output_path, sample_ids, assets_dir, skeletons_dir, overwrite = task
+    print(
+        f"[{index + 1}/{shard_count}] writing {output_path.name} "
+        f"({len(sample_ids)} samples)",
+        flush=True,
+    )
+    if output_path.exists() and not overwrite:
+        return index, output_path.name, sha256_file(output_path), output_path.stat().st_size
+    checksum, archive_bytes = build_shard(
+        output_path, sample_ids, assets_dir, skeletons_dir
+    )
+    return index, output_path.name, checksum, archive_bytes
+
+
 def main() -> None:
     args = parse_args()
-    if args.samples_per_shard < 1:
-        raise ValueError("--samples-per-shard must be positive")
+    if args.samples_per_shard < 1 or args.workers < 1:
+        raise ValueError("--samples-per-shard and --workers must be positive")
 
     captions = load_captions(args.captions)
     sample_ids = sorted(captions)
+    inspect_tasks = [
+        (sample_id, captions[sample_id], args.assets_dir, args.skeletons_dir)
+        for sample_id in sample_ids
+    ]
     missing: list[str] = []
     records: list[dict[str, object]] = []
-    for sample_id in sample_ids:
-        asset = args.assets_dir / f"{sample_id}_mesh.glb"
-        skeleton = args.skeletons_dir / f"{sample_id}.txt"
-        if not asset.is_file() or not skeleton.is_file():
-            missing.append(sample_id)
-            continue
-        records.append(
-            {
-                "id": sample_id,
-                "caption": captions[sample_id],
-                "asset": f"assets/{sample_id}_mesh.glb",
-                "asset_bytes": asset.stat().st_size,
-                "skeleton": f"skeletons/{sample_id}.txt",
-                "skeleton_bytes": skeleton.stat().st_size,
-            }
-        )
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        for record, missing_id in executor.map(inspect_sample, inspect_tasks):
+            if record is not None:
+                records.append(record)
+            if missing_id is not None:
+                missing.append(missing_id)
     if missing:
         preview = ", ".join(missing[:20])
         raise FileNotFoundError(f"{len(missing)} caption IDs lack a pair: {preview}")
@@ -143,17 +185,21 @@ def main() -> None:
     shard_count = len(id_chunks)
     shard_records: list[dict[str, object]] = []
     checksums: list[tuple[str, str]] = []
+    build_tasks = []
     for index, shard_ids in enumerate(id_chunks):
         filename = f"texturig-{index:05d}-of-{shard_count:05d}.tar"
         output_path = shards_dir / filename
-        if output_path.exists() and not args.overwrite:
-            raise FileExistsError(
-                f"{output_path} already exists; use --overwrite after checking it"
+        build_tasks.append(
+            (
+                index, shard_count, output_path, shard_ids, args.assets_dir,
+                args.skeletons_dir, args.overwrite,
             )
-        print(f"[{index + 1}/{shard_count}] writing {filename} ({len(shard_ids)} samples)", flush=True)
-        checksum, archive_bytes = build_shard(
-            output_path, shard_ids, args.assets_dir, args.skeletons_dir
         )
+
+    with ThreadPoolExecutor(max_workers=args.workers) as executor:
+        build_results = list(executor.map(build_shard_task, build_tasks))
+    for index, filename, checksum, archive_bytes in sorted(build_results):
+        shard_ids = id_chunks[index]
         asset_bytes = sum(int(record_by_id[key]["asset_bytes"]) for key in shard_ids)
         skeleton_bytes = sum(int(record_by_id[key]["skeleton_bytes"]) for key in shard_ids)
         shard_records.append(
