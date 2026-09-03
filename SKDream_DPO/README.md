@@ -24,9 +24,25 @@ SKDream mesh-synthesis components:
 - optional tile upscaling and UV/texture refinement;
 - the historical `objsk_eval2` evaluation inputs.
 
-Checkpoints and generated training data are not committed to this Git repository.
+Checkpoints and generated training data are not committed to this Git repository;
+the released files are linked below.
 The mesh code is kept for end-to-end SKDream compatibility, but has additional
 third-party dependencies and licensing notices; see [`THIRD_PARTY.md`](THIRD_PARTY.md).
+
+## Released assets
+
+- [Final SKDream/SKA-DPO ControlNet checkpoint](https://huggingface.co/zhaors00/Stroke3D/tree/main/skdream-ska-dpo)
+- [2,000-pair SKA-DPO training data](https://huggingface.co/zhaors00/Stroke3D/tree/main/ska-dpo-data)
+
+The DPO archive contains four preferred, four rejected, and four skeleton-condition
+PNG images per example, plus captions and camera metadata. It does not contain the
+upstream OBJ assets. Download it with:
+
+```bash
+hf download zhaors00/Stroke3D \
+  ska-dpo-data/stroke3d_ska_dpo_margin_0.10.tar \
+  --local-dir stroke3d-assets
+```
 
 ## Environment
 

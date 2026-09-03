@@ -16,7 +16,7 @@ Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 
 The maintained open-source path is `SKDream_DPO`; follow its README for the
 environment, data layout, and commands. Datasets and checkpoints are not stored
-in this Git repository. They will be collected in the single Hugging Face model
+in this Git repository. They are released in the single Hugging Face model
 repository [`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D), with
 separate subfolders for each component.
 
@@ -24,8 +24,8 @@ separate subfolders for each component.
 
 - [x] Code release
 - [x] Skeleton checkpoints: [Sk-VAE](https://drive.google.com/file/d/17v0J-oBpKQFxzEmfVINp0gbK-oAKylcO/view?usp=sharing) and [Sk-Diff](https://drive.google.com/file/d/1CVAq1dHnv34oXtPfIYSJYCgP00McMeiB/view?usp=drive_link)
-- [ ] SKA-DPO checkpoint release
-- [ ] Data release
+- [x] [SKA-DPO checkpoint](https://huggingface.co/zhaors00/Stroke3D/tree/main/skdream-ska-dpo)
+- [x] [SKA-DPO preference-pair data](https://huggingface.co/zhaors00/Stroke3D/tree/main/ska-dpo-data)
 
 ## Citation
 
