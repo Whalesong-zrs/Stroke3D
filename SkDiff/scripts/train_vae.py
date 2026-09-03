@@ -2,18 +2,19 @@ import sys
 import os
 import shutil
 import argparse
-from pathlib import Path
-# for import other sub folder
-current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, '..'))
-sys.path.insert(0, project_root)
-
+import numpy as np
 from tqdm import tqdm
+from pathlib import Path
+
 import torch
 torch.multiprocessing.set_sharing_strategy('file_system')
 from torch.nn.utils import clip_grad_norm_
 import torch.utils.tensorboard
-import numpy as np
+
+# for import other sub folder
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.abspath(os.path.join(current_dir, '..'))
+sys.path.insert(0, project_root)
 
 from utils.misc import load_config, seed_all, get_new_log_dir, get_logger
 from utils.transform import FeaturizeGraph
@@ -27,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda:0')
     parser.add_argument('--logdir', type=str, default='logs')
     args = parser.parse_args()
-    
+
     # === Load YAML ===
     cfg = load_config(args.config)
     cfg_name = Path(args.config).stem
@@ -57,10 +58,10 @@ if __name__ == '__main__':
     logger.info('Building model...')
     if cfg.model.name == 'vae':
         model = NodeCoordVAE(
-            cfg.model.coord_dim, # N*3
-            cfg.model.hidden_dim, # 128
-            cfg.model.latent_dim, # 32
-            cfg.model.norm_type # layer
+            cfg.model.coord_dim,
+            cfg.model.hidden_dim,
+            cfg.model.latent_dim,
+            cfg.model.norm_type
         ).to(args.device)
     else:
         raise NotImplementedError('Model %s not implemented' % cfg.model.name)
@@ -81,7 +82,6 @@ if __name__ == '__main__':
         edge_index = batch.bond_index
 
         with torch.autocast(device_type='cuda', dtype=torch.float16, enabled=cfg.train.use_amp):
-            
             x_recon, mu, logvar = model(x, edge_index)
             loss, recon_loss, kl_loss = model.get_loss(x, x_recon, mu, logvar, beta=cfg.train.kl_beta)
         
@@ -138,6 +138,7 @@ if __name__ == '__main__':
 
         avg_loss_dict = {k: v / sum_n for k, v in sum_loss_dict.items()}
         avg_loss = avg_loss_dict['loss']
+
         # update lr scheduler
         if cfg.train.scheduler.type == 'plateau':
             scheduler.step(avg_loss)
@@ -153,6 +154,7 @@ if __name__ == '__main__':
         for k, v in avg_loss_dict.items():
             writer.add_scalar('val/%s' % k, v, it)
         writer.flush()
+
         return avg_loss
     
     try:
@@ -180,4 +182,13 @@ if __name__ == '__main__':
         logger.info('Keyboard Interrupt')
     finally:
         logger.info('Saving final checkpoint...')
+        ckpt_path = os.path.join(ckpt_dir, 'final.pt')
+        torch.save({
+            'config': cfg,
+            'encoder': model.encoder.state_dict(),
+            'decoder': model.decoder.state_dict(),
+            'optimizer': optimizer.state_dict(),
+            'scheduler': scheduler.state_dict(),
+            'iteration': it,
+        }, ckpt_path)
                     

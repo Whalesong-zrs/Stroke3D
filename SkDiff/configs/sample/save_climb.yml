@@ -28,7 +28,7 @@ val:
   data_mode: val
   use_random: true
   use_text: true
-  seed: 2023
+  seed: 2026
   batch_size: 5000
   num_workers: 32
 

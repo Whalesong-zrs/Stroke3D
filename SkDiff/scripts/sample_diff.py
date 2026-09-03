@@ -29,6 +29,9 @@ from models.latent_model import TextLatentModel
 from models.diffusion import GaussianDiffusion
 from models.vae import NodeCoordVAE
 
+os.environ["PYOPENGL_PLATFORM"] = "egl"
+renderer = PyRenderWrapper((512, 512))
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="configs/sample/sample_diff.yml")

@@ -6,7 +6,10 @@ __pycache__/
 
 # Local experiment artifacts
 ckpt/
+ckpts/
+datasets/
 checkpoints/
+logs/
 data/
 eval/
 logs/

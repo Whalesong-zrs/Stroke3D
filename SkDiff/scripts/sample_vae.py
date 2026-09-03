@@ -2,18 +2,18 @@ import torch
 import sys
 import os
 import argparse
+import matplotlib.pyplot as plt
 from pathlib import Path
+from tqdm import tqdm
+
+from torch_geometric.loader import DataLoader
+from torch_geometric.transforms import Compose
+import torch.nn.functional as F
 
 # for import other sub folder
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..'))
 sys.path.insert(0, project_root)
-
-from torch_geometric.loader import DataLoader
-from torch_geometric.transforms import Compose
-import torch.nn.functional as F
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from utils.misc import load_config, seed_all, edge_index_to_hierarchy, build_joint_dict, visualize_skeleton_2d
 from utils.transform import FeaturizeGraph
@@ -25,7 +25,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='configs/sample/sample_vae.yml')
     parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--logdir', type=str, default='logs')
     args = parser.parse_args()
     
     # === Load YAML ===
@@ -35,11 +34,9 @@ if __name__ == '__main__':
     use_random = cfg.val.use_random
     seed = cfg.val.seed
     seed_all(seed=seed)
-    
 
     # Transforms
     featurizer = FeaturizeGraph(use_rotate=False)
-    # featurizer = FeaturizeGraph(use_rotate=True)
     transform = Compose([
         featurizer,  
     ])
@@ -50,7 +47,7 @@ if __name__ == '__main__':
         transform = transform,
         mode=data_mode
     )
-    print(len(val_dataset))
+    print(f"Dataset size: {len(val_dataset)}")
     val_loader = DataLoader(val_dataset, batch_size=1, shuffle=False,
                             follow_batch=featurizer.follow_batch)
 
@@ -90,7 +87,7 @@ if __name__ == '__main__':
             batch = batch.to(args.device)
             edge_index = batch.bond_index
             node_pos = batch.node_pos
-            batch_index = batch.batch  # 用于区分样本
+            batch_index = batch.batch
 
             with torch.autocast(device_type='cuda', dtype=torch.float16):
                 x_recon, mu, logvar = vae(node_pos, edge_index, random=use_random)
@@ -133,6 +130,3 @@ if __name__ == '__main__':
                 plt.savefig(f"vis/vae/{data_mode}/no_random/comparison_{i}.png", bbox_inches='tight')
                 plt.close(fig)
                 print(f"✅ Saved vis/vae/{data_mode}/no_random/comparison_{i}.png")
-            
-            # if i == 3:
-            #     break

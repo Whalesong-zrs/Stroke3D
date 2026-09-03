@@ -6,7 +6,7 @@ model:
   norm_type: layer
 
 train:
-  seed: 2023
+  seed: 2026
   batch_size: 64
   num_workers: 32
   pin_memory: True
@@ -28,9 +28,7 @@ train:
   kl_beta: 1.e-8
 
 dataset:
-  name: node
-  use_rotate: true
-  train_root: /home/zrs/skdream_data/data/joint_txt
-  val_root: /home/zrs/skdream_data/data/joint_txt
-  train_file: /home/zrs/skdream_data/data/train.txt
-  val_file: /home/zrs/skdream_data/data/val.txt
+  use_rotate: false
+  use_tag: false
+  train_file: /root/autodl-fs-data3/Articulation-XL2.0/train_meta.json
+  val_file: /root/autodl-fs-data3/Articulation-XL2.0/val_meta.json

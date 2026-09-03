@@ -15,7 +15,9 @@ from pyrender import (
     RenderFlags
 )
 
-os.environ["PYOPENGL_PLATFORM"] = "egl"
+# os.environ['DISPLAY'] = ':0'
+# os.environ["PYOPENGL_PLATFORM"] = "egl"
+pyrender.constants.USE_DUMMY_CAMERA = True
 
 def look_at(eye, center, up):
     """Create a look-at (view) matrix."""

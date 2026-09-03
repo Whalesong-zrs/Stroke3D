@@ -84,7 +84,6 @@ class NodeDataset(Dataset):
         assert os.path.exists(meta_file), f"Error: The file '{meta_file}' does not exist!"
 
         self.meta_file = meta_file
-        self.clip_emb_root = config.clip_emb_root
         self.transform = transform
         self.random_view = random_view
         self.random_tag = random_tag
@@ -191,12 +190,6 @@ class NodeDataset(Dataset):
                 if np.random.random() < 0.3:
                     view_name = view_name_map[view]
                     caption = f"{caption.replace('.', '')}, {view_name}."
-
-        # clip_emb_path = os.path.join(self.clip_emb_root, f"{base_name}.pt")
-        # if os.path.exists(clip_emb_path):
-        #     clip_emb = torch.load(clip_emb_path)
-        # else:
-        #     clip_emb = None
     
         info_dict = {
             "rig_path": rig_path, 

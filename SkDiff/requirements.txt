@@ -12,3 +12,6 @@ scikit-learn
 einops
 easydict
 timm
+pyrender
+opencv-python
+httpx[socks]
