@@ -10,25 +10,27 @@ Ruisi Zhao, Haoren Zheng, Zongxin Yang, Hehe Fan, Yi Yang
 
 - [`SkDiff/`](SkDiff/) is the legacy archival snapshot of the skeleton latent
   VAE, diffusion, and ControlNet components. It is not maintained in this
-  release and may still contain environment-specific historical settings.
+  release and may still contain environment-specific historical settings. See
+  [`SkDiff/README.md`](SkDiff/README.md) for its scope, entry points, and assets.
 - [`SKDream_DPO/`](SKDream_DPO/) contains the cleaned SKDream/SKA-DPO pipeline
-  for preference-pair construction, training, inference, and evaluation.
+  for preference-pair construction, training, inference, and evaluation. See
+  [`SKDream_DPO/README.md`](SKDream_DPO/README.md) for setup and commands.
 - [`TextuRig/`](TextuRig/) contains the cleaned TextuRig curation utilities and
-  documents the 6,633-sample skeleton/GLB release format.
+  documents the 6,633-sample skeleton/GLB release format. See
+  [`TextuRig/README.md`](TextuRig/README.md) for the data format and processing
+  pipeline.
 
-The maintained open-source paths are `SKDream_DPO` and `TextuRig`; follow their
-READMEs for environments, data layouts, and commands. Datasets and checkpoints
-are not stored in this Git repository. They are released in the single Hugging
-Face repository [`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D),
-with separate subfolders for each component.
+This front page is an overview. Detailed environments, data layouts, and commands
+are maintained in the README inside each code subfolder. Datasets and checkpoints
+are not stored in Git; they are released in
+[`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D) under `data/` and
+`ckpt/`.
 
 ## Release status
 
 - [x] Code release
-- [x] Skeleton checkpoints: [Sk-VAE](https://drive.google.com/file/d/17v0J-oBpKQFxzEmfVINp0gbK-oAKylcO/view?usp=sharing) and [Sk-Diff](https://drive.google.com/file/d/1CVAq1dHnv34oXtPfIYSJYCgP00McMeiB/view?usp=drive_link)
-- [x] [SKA-DPO checkpoint](https://huggingface.co/zhaors00/Stroke3D/tree/main/skdream-ska-dpo)
-- [x] [SKA-DPO preference-pair data](https://huggingface.co/zhaors00/Stroke3D/tree/main/ska-dpo-data)
-- [x] [TextuRig skeletons, 3D assets, captions, and manifests](https://huggingface.co/zhaors00/Stroke3D/tree/main/texturig)
+- [x] Checkpoints: [Sk-VAE](https://huggingface.co/zhaors00/Stroke3D/tree/main/ckpt/Sk-VAE), [Sk-DiT](https://huggingface.co/zhaors00/Stroke3D/tree/main/ckpt/Sk-DiT), and [SKDream/SKA-DPO](https://huggingface.co/zhaors00/Stroke3D/tree/main/ckpt/SKDream-SKA-DPO)
+- [x] Data: [shared skeleton training data](https://huggingface.co/zhaors00/Stroke3D/tree/main/data/Skeleton-Data), [SKA-DPO preference pairs](https://huggingface.co/zhaors00/Stroke3D/tree/main/data/DPO-Data), and [TextuRig](https://huggingface.co/zhaors00/Stroke3D/tree/main/data/TextuRig)
 
 ## Citation
 

@@ -6,8 +6,8 @@ UniRig. The released selection contains 6,633 captioned samples.
 
 ## Download
 
-The data are hosted in the `texturig/` directory of the
-[`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D/tree/main/texturig)
+The data are hosted in the `data/TextuRig/` directory of the
+[`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D/tree/main/data/TextuRig)
 Hugging Face repository. Rendered PNG images are not part of the release.
 
 Each uncompressed tar shard contains:
@@ -62,4 +62,3 @@ UniRig. Source assets may have different per-object licenses. No blanket license
 is asserted over third-party meshes; users are responsible for following the
 applicable upstream license and terms for each asset. Stroke3D-authored
 processing code is provided for research reproducibility.
-

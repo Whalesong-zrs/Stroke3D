@@ -31,8 +31,8 @@ third-party dependencies and licensing notices; see [`THIRD_PARTY.md`](THIRD_PAR
 
 ## Released assets
 
-- [Final SKDream/SKA-DPO ControlNet checkpoint](https://huggingface.co/zhaors00/Stroke3D/tree/main/skdream-ska-dpo)
-- [2,000-pair SKA-DPO training data](https://huggingface.co/zhaors00/Stroke3D/tree/main/ska-dpo-data)
+- [Final SKDream/SKA-DPO ControlNet checkpoint](https://huggingface.co/zhaors00/Stroke3D/tree/main/ckpt/SKDream-SKA-DPO)
+- [2,000-pair SKA-DPO training data](https://huggingface.co/zhaors00/Stroke3D/tree/main/data/DPO-Data)
 
 The DPO archive contains four preferred, four rejected, and four skeleton-condition
 PNG images per example, plus captions and camera metadata. It does not contain the
@@ -40,7 +40,7 @@ upstream OBJ assets. Download it with:
 
 ```bash
 hf download zhaors00/Stroke3D \
-  ska-dpo-data/stroke3d_ska_dpo_margin_0.10.tar \
+  data/DPO-Data/stroke3d_ska_dpo_margin_0.10.tar \
   --local-dir stroke3d-assets
 ```
 
@@ -66,7 +66,7 @@ The pipeline uses the MVDream Diffusers checkpoint
 an SFT SKDream controlnet, the
 [`dinov2_vitl14_reg`](https://github.com/facebookresearch/dinov2) checkpoint, and the
 SKA scorer checkpoint. The Stroke3D data and final SKA-DPO weights are organized under
-separate subfolders in the single Hugging Face repository
+the `data/` and `ckpt/` folders in the single Hugging Face repository
 [`zhaors00/Stroke3D`](https://huggingface.co/zhaors00/Stroke3D). Review the component
 cards and upstream licenses before use.
 
@@ -119,7 +119,7 @@ python infer_mv.py \
   --data-dir /path/to/eval_inputs \
   --output-dir eval/ska_dpo \
   --controlnet zhaors00/Stroke3D \
-  --controlnet-subfolder skdream-ska-dpo
+  --controlnet-subfolder ckpt/SKDream-SKA-DPO
 
 export EVAL_JSON=/path/to/eval_inputs/eval.json
 export IMAGE_DIR=eval/ska_dpo
