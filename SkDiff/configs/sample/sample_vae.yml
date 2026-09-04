@@ -5,7 +5,7 @@ model:
     hidden_dim: 64
     latent_dim: 32
     norm_type: layer
-    ckpt_path: ckpts/vae.ckpt
+    ckpt_path: ckpts/Sk-VAE.pt
 
 val:
   data_mode: val
@@ -16,5 +16,5 @@ val:
 dataset:
   use_rotate: false
   use_tag: false
-  train_file: /root/autodl-fs-data3/Articulation-XL2.0/train_meta.json
-  val_file: /root/autodl-fs-data3/Articulation-XL2.0/val_meta.json
+  train_file: datasets/train_meta.json
+  val_file: datasets/val_meta.json

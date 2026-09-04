@@ -11,14 +11,14 @@ model:
     cfg_scale: 7.0
     min_snr_loss_weight: False
     min_snr_gamma: 1
-    ckpt_path: ckpts/skdiff.pt
+    ckpt_path: ckpts/Sk-DiT.pt
 
   vae:
     coord_dim: 3
     hidden_dim: 64
     latent_dim: 32
     norm_type: layer
-    ckpt_path: ckpts/vae.pt
+    ckpt_path: ckpts/Sk-VAE.pt
 
   clip:
     clip_embed_dim: 768

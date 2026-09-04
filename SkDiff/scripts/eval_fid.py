@@ -13,26 +13,23 @@ sys.path.insert(0, project_root)
 from models.vae import NodeCoordVAE
 
 method_dirs = {
-    "gt": "/root/autodl-fs-data3/Articulation-XL2.0/test_aligned_data",
-    "rignet": "/root/autodl-fs-data3/RigNet/magicarti_data/anthropomorphic",
-    "magic": "/root/autodl-fs-data3/MagicArticulate/outputs/aligned",
-    "skdream": "/root/autodl-fs-data3/skdream/sk_m2s/aligned_final",
-    "gnndiff": [
-        "/root/autodl-fs-data3/gnndiff/magicarti_test_xy/sample_sk_2024",
-        "/root/autodl-fs-data3/gnndiff/magicarti_test_yz/sample_sk_2024",
-        "/root/autodl-fs-data3/gnndiff/magicarti_test_xz/sample_sk_2024",
+    "gt1": "datasets/test",
+    "gt2": "datasets/test_diverse",
+    "stroke3d": [
+        "outputs/skeleton_xy",
+        "outputs/skeleton_yz",
+        "outputs/skeleton_xz",
     ],
 }
 method_patterns = {
-    "gt": "*.txt",
-    "rignet": "*.txt",
-    "magic": "*_pred.txt",
-    "skdream": "*.txt",
-    "gnndiff": "*.txt",
+    "gt1": "*.txt",
+    "gt2": "*.txt",
+    "stroke3d": "*.txt",
 }
-selected_methods = ["rignet", "skdream", "magic", "gnndiff"]
+selected_methods = ["stroke3d"]
 common_only = True
-output_dir = "/root/autodl-fs-data3/teaser_demo"
+output_dir = "outputs/fid"
+os.makedirs(output_dir, exist_ok=True)
 
 
 def main():
@@ -49,7 +46,7 @@ def main():
         latent_dim=32,
         norm_type="layer"
     ).to(device)
-    vae_ckpt_path = "/root/autodl-fs-data3/model/vae_1e-8_500k_32.pt"
+    vae_ckpt_path = "ckpts/Sk-VAE.pt"
     if not vae_ckpt_path or not os.path.isfile(vae_ckpt_path):
         raise FileNotFoundError(f"VAE checkpoint path not found or specified: {vae_ckpt_path}")
     print(f"Loading VAE weights from: {vae_ckpt_path}")
@@ -72,33 +69,53 @@ def main():
 
 
 def load_method(method_name):
-    method_pattern = method_patterns[method_name]
-    all_uuids = []
-    all_rig_paths = []
+    method_pattern = method_patterns.get(method_name, "*.txt")
+    method_dir = method_dirs[method_name]
 
-    if isinstance(method_dirs[method_name], list):
-        for method_dir in method_dirs[method_name]:
-            rig_paths = sorted(glob(os.path.join(method_dir, "**", method_pattern), recursive=True))
-            uuids = [os.path.basename(p).split('.')[0].split('_')[0] for p in rig_paths]
-            all_uuids.extend(uuids)
-            all_rig_paths.extend(rig_paths)
+    if isinstance(method_dir, list):
+        # Keep one prediction per UUID grouped across the three GNNDiff views.
+        paths_by_dir = {}
+        uuids_by_dir = {}
+        for view_dir in method_dir:
+            rig_paths = sorted(glob(os.path.join(view_dir, "**", method_pattern), recursive=True))
+            uuids = [extract_uuid(path, method_name) for path in rig_paths]
+            paths_by_dir[view_dir] = rig_paths
+            uuids_by_dir[view_dir] = uuids
+
+        reference_dir = method_dir[0]
+        uuids = uuids_by_dir[reference_dir]
+        all_rig_paths = []
+        for uuid in uuids:
+            entries = []
+            for view_dir in method_dir:
+                if uuid not in uuids_by_dir[view_dir]:
+                    raise ValueError(f"Missing {uuid} in {view_dir}")
+                entries.append(paths_by_dir[view_dir][uuids_by_dir[view_dir].index(uuid)])
+            all_rig_paths.append(entries)
     else:
-        method_dir = method_dirs[method_name]
-        rig_paths = sorted(glob(os.path.join(method_dir, "**", method_pattern), recursive=True))
-        all_rig_paths = rig_paths
-        all_uuids = [os.path.basename(p).split('.')[0].split('_')[0] for p in rig_paths]
+        all_rig_paths = sorted(glob(os.path.join(method_dir, "**", method_pattern), recursive=True))
+        uuids = [extract_uuid(path, method_name) for path in all_rig_paths]
 
-    return all_uuids, all_rig_paths
+    return uuids, all_rig_paths
+
+
+def extract_uuid(path, method_name=None):
+    if method_name is not None and "unirig" in method_name:
+        return os.path.normpath(path).split(os.sep)[-2]
+    return os.path.basename(path).split('.')[0].split('_pred')[0]
 
 
 def build_rig_paths(selected_methods, common_only=True):
     uuid_map = {}
     paths_map = {}
 
-    # 加载 GT 及所有方法的文件路径
-    uuids, paths = load_method("gt")
+    # Merge the standard and diverse test sets before matching predictions.
+    uuids, paths = load_method("gt1")
     uuid_map["gt"] = uuids
     paths_map["gt"] = paths
+    uuids, paths = load_method("gt2")
+    uuid_map["gt"].extend(uuids)
+    paths_map["gt"].extend(paths)
     for m in selected_methods:
         uuids, paths = load_method(m)
         uuid_map[m] = uuids
@@ -249,8 +266,14 @@ def compute_skeleton_fid(method_name, gt_paths, pred_paths, vae_model, device="c
         gt_joints.append(joints)
         gt_bones.append(bones)
 
-    for p in pred_paths:
-        feature, joints, bones = extract_skeleton_feature(p, vae_model, device=device, random=False)
+    for pred_entry in pred_paths:
+        # A method with multiple inference views contributes one sample per UUID.
+        # Use the first available view, preserving the previous first-match behavior.
+        if isinstance(pred_entry, list):
+            pred_entry = next((p for p in pred_entry if os.path.isfile(p)), None)
+        if pred_entry is None:
+            continue
+        feature, joints, bones = extract_skeleton_feature(pred_entry, vae_model, device=device, random=False)
         pred_features.append(feature)
         pred_joints.append(joints)
         pred_bones.append(bones)

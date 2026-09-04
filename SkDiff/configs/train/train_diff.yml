@@ -18,7 +18,7 @@ model:
     hidden_dim: 64
     latent_dim: 32
     norm_type: layer
-    ckpt_path: ckpts/vae.pt
+    ckpt_path: ckpts/Sk-VAE.pt
 
   clip:
     clip_embed_dim: 768
